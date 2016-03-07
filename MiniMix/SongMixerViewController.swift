@@ -132,6 +132,7 @@ class SongMixerViewController: UITableViewController {
     override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
         //EMPTY...handled by the actions below
     }
+    @available(iOS 8.0, *)
     override func tableView(tableView: UITableView, editActionsForRowAtIndexPath indexPath: NSIndexPath) -> [UITableViewRowAction]? {
         if indexPath.section == MASTER_SECTION {
             return []
@@ -158,15 +159,6 @@ class SongMixerViewController: UITableViewController {
             return [delete]
         }
     }
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
 }
 
 extension SongMixerViewController: TrackControllerDelegate {

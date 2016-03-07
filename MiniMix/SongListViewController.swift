@@ -49,10 +49,80 @@ class SongListViewController: UIViewController {
     @IBAction func shareAction() {
         if let indexPath = tableView.indexPathForSelectedRow {
             let song = getSelectedSong(forIndexPath: indexPath)
+            if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
+                //TODO: mix it...perhaps dispatch to main queue?
+                createSongMixFile(song) { success in
+                    if success {
+                        self.shareMixFile(song)
+                    } else {
+                        //TODO: ALERT popup, couldn't create the mix..
+                    }
+                }
+            } else {
+                shareMixFile(song)
+            }
             print("Shareing for song name: \(song.name)")
         }
     }
+    func shareMixFile(song: SongMix) {
+        let mixUrl = AudioCache.mixedSongPath(song)
+        guard NSFileManager.defaultManager().fileExistsAtPath(mixUrl.path!) else {
+            print("Could not find mix file")
+            return
+        }
+        dispatch_async(dispatch_get_main_queue()) {
+            let shareViewController = UIActivityViewController(activityItems: [mixUrl], applicationActivities: nil)
+            if #available(iOS 8.0, *) {
+                shareViewController.completionWithItemsHandler = {
+                    (activity, success, items, error) in
+                    self.dismissViewControllerAnimated(true, completion: nil)
+                }
+            } else {
+                // Fallback on earlier versions
+            }
+            self.presentViewController(shareViewController, animated: true, completion: nil)
+        }
+    }
+    
+    func createSongMixFile(song: SongMix, postHandler: (success: Bool) -> Void) {
+        let composition = AVMutableComposition()
+        var inputMixParms = [AVAudioMixInputParameters]()
+        for track in song.tracks {
+            let trackUrl = AudioCache.trackPath(track, parentSong: song)
+            let audioAsset = AVURLAsset(URL: trackUrl)
+            let audioCompositionTrack = composition.addMutableTrackWithMediaType(AVMediaTypeAudio, preferredTrackID: kCMPersistentTrackID_Invalid)
+            do {
+                try audioCompositionTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, audioAsset.duration), ofTrack: audioAsset.tracksWithMediaType(AVMediaTypeAudio).first!, atTime: kCMTimeZero)
+            }catch {
+                postHandler(success: false)
+                return
+            }
+            let mixParm = AVMutableAudioMixInputParameters(track: audioCompositionTrack)
+            inputMixParms.append(mixParm)
+        }
+        //EXPORT
+        let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
+        let mixUrl = AudioCache.mixedSongPath(song)
+        do {
+            try NSFileManager.defaultManager().removeItemAtPath(mixUrl.path!)
+        } catch {
+            
+        }
+        if let export = export {
+            let mixParms = AVMutableAudioMix()
+            mixParms.inputParameters = inputMixParms
+            export.audioMix = mixParms
+            export.outputFileType = AVFileTypeAppleM4A
+            export.outputURL = mixUrl
+            export.exportAsynchronouslyWithCompletionHandler {
+                postHandler(success: true)
+                print("EXPORTED..try to play it now")
+            }
+        }
+
+    }
 }
+//MARK: table view data soure and delegate protocols
 extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     //MARK: Data Source protocols
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -86,6 +156,7 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
         //EMPTY...handled by the actions below
     }
+    @available(iOS 8.0, *)
     func tableView(tableView: UITableView, editActionsForRowAtIndexPath indexPath: NSIndexPath) -> [UITableViewRowAction]? {
         //three: Delete, ReMix, Edit, Share
         let delete = UITableViewRowAction(style: .Destructive, title: "Delete") { action, idxPath in

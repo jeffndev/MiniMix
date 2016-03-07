@@ -84,7 +84,11 @@ class AudioCache {
         return NSURL.fileURLWithPathComponents(pathComponents)!
     }
     
-        
+    class func mixedSongPath(song: SongMix) -> NSURL {
+        let pathComponents = [songDirectory(song), "\(song.name).m4a"]
+        return NSURL.fileURLWithPathComponents(pathComponents)!
+    }
+    
     func pathForIdentifier(identifier: String) -> String {
         var mutableIdentifier = identifier
         if !identifier.hasSuffix(".jpg") {
