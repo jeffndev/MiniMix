@@ -156,14 +156,15 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
         //EMPTY...handled by the actions below
     }
+    
     @available(iOS 8.0, *)
     func tableView(tableView: UITableView, editActionsForRowAtIndexPath indexPath: NSIndexPath) -> [UITableViewRowAction]? {
         //three: Delete, ReMix, Edit, Share
         let delete = UITableViewRowAction(style: .Destructive, title: "Delete") { action, idxPath in
             self.deleteAction(idxPath)
         }
-        let share = UITableViewRowAction(style: .Normal, title: "Share") { action, idxPath in
-            self.shareAction(idxPath)
+        let share = UITableViewRowAction(style: .Normal, title: "Cloud") { action, idxPath in
+            self.toCloudAction(idxPath)
         }
         share.backgroundColor = UIColor(red: 34.0/255.0, green: 255.0/255.0, blue: 6.0/255.0, alpha: 1.0)  //UIColor.greenColor()
         let reMix = UITableViewRowAction(style: .Normal, title: "Remix") {
@@ -186,11 +187,10 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
             songs.removeAtIndex(deleteIndex)
         }
         tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Automatic)
-        //print("DELETING: \(song.name)")
     }
-    func shareAction(indexPath: NSIndexPath) {
+    func toCloudAction(indexPath: NSIndexPath) {
         let song = getSelectedSong(forIndexPath: indexPath)
-        print("Sharing: \(song.name)")
+        print("Sharing to cloud: \(song.name)")
     }
     func remixAction(indexPath: NSIndexPath) {
         let song = getSelectedSong(forIndexPath: indexPath)
@@ -215,7 +215,7 @@ extension SongListViewController: SongPlaybackDelegate {
         playMixNaiveImplementation(song)
     }
     func stopSong(song: SongMix) {
-        
+        players.map() { $0.stop() }
     }
     
     func playMixNaiveImplementation(song: SongMix) {

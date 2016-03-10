@@ -16,6 +16,7 @@
 		BD5791791C6A761E0054742E /* SongListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5791781C6A761E0054742E /* SongListViewController.swift */; };
 		BD57917B1C6A7B110054742E /* SongInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD57917A1C6A7B110054742E /* SongInfoViewController.swift */; };
 		BD57917D1C6A7B470054742E /* SongMixerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD57917C1C6A7B470054742E /* SongMixerViewController.swift */; };
+		BD7C69661C90E964005825A2 /* Model.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = BD7C69641C90E964005825A2 /* Model.xcdatamodeld */; };
 		BD8A8C251C750E49004E8220 /* AudioTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8A8C241C750E49004E8220 /* AudioTrack.swift */; };
 		BD8A8C271C7512E8004E8220 /* TrackTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8A8C261C7512E8004E8220 /* TrackTableViewCell.swift */; };
 		BD8A8C291C7512F8004E8220 /* MasterTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8A8C281C7512F8004E8220 /* MasterTableViewCell.swift */; };
@@ -36,6 +37,7 @@
 		BD5791781C6A761E0054742E /* SongListViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SongListViewController.swift; sourceTree = "<group>"; };
 		BD57917A1C6A7B110054742E /* SongInfoViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SongInfoViewController.swift; sourceTree = "<group>"; };
 		BD57917C1C6A7B470054742E /* SongMixerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SongMixerViewController.swift; sourceTree = "<group>"; };
+		BD7C69651C90E964005825A2 /* Model.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Model.xcdatamodel; sourceTree = "<group>"; };
 		BD8A8C241C750E49004E8220 /* AudioTrack.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioTrack.swift; sourceTree = "<group>"; };
 		BD8A8C261C7512E8004E8220 /* TrackTableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TrackTableViewCell.swift; sourceTree = "<group>"; };
 		BD8A8C281C7512F8004E8220 /* MasterTableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MasterTableViewCell.swift; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 				BD5791721C6A6BFC0054742E /* Info.plist */,
 				BD5791661C6A6BFC0054742E /* AppDelegate.swift */,
 				BDC7EF1B1C86244200493749 /* CoreDataStackManager.swift */,
+				BD7C69641C90E964005825A2 /* Model.xcdatamodeld */,
 				BDC7EF191C8623BC00493749 /* Models */,
 				BDC7EF1A1C8623EE00493749 /* ViewControllers */,
 				BD01CAFB1C766026000742C7 /* FloatRatingView.swift */,
@@ -204,6 +207,7 @@
 				BD8A8C2B1C75357C004E8220 /* SongMix.swift in Sources */,
 				BD01CAFC1C766026000742C7 /* FloatRatingView.swift in Sources */,
 				BD5791791C6A761E0054742E /* SongListViewController.swift in Sources */,
+				BD7C69661C90E964005825A2 /* Model.xcdatamodeld in Sources */,
 				BD57917D1C6A7B470054742E /* SongMixerViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -359,6 +363,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		BD7C69641C90E964005825A2 /* Model.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				BD7C69651C90E964005825A2 /* Model.xcdatamodel */,
+			);
+			currentVersion = BD7C69651C90E964005825A2 /* Model.xcdatamodel */;
+			path = Model.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = BD57915B1C6A6BFC0054742E /* Project object */;
 }

@@ -17,7 +17,7 @@ class SongMix: NSObject {
     var name: String
     var createDate: NSDate
     var genre: String
-    var numberOfTracks: Int?
+    //var numberOfTracks: Int?
     var songDescription: String?
     var lengthInSeconds: Double?
     var rating: Float?

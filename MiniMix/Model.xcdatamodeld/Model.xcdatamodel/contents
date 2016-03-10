@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="9525" systemVersion="15D21" minimumToolsVersion="Xcode 7.0">
+    <entity name="AudioTrack" representedClassName=".AudioTrack" syncable="YES">
+        <attribute name="createDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="hasRecordedFile" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="mixVolume" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="trackDescription" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="trackType" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
+    <entity name="SongMix" representedClassName=".SongMix" syncable="YES">
+        <attribute name="createDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="genre" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="lastEditDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="lengthInSeconds" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="rating" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="songDescription" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="userInitialized" optional="YES" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="SongMix" positionX="-63" positionY="-18" width="128" height="180"/>
+        <element name="AudioTrack" positionX="-54" positionY="63" width="128" height="150"/>
+    </elements>
+</model>
