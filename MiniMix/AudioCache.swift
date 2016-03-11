@@ -77,10 +77,10 @@ class AudioCache {
     class func songDirectory(song: SongMix) -> String {
         let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!
 
-        return documentsDirectoryURL.URLByAppendingPathComponent(song.id.UUIDString).path!
+        return documentsDirectoryURL.URLByAppendingPathComponent(song.id).path!
     }
     class func trackPath(track: AudioTrack, parentSong song: SongMix) -> NSURL {
-        let pathComponents = [songDirectory(song), "\(track.id.UUIDString).caf"]
+        let pathComponents = [songDirectory(song), "\(track.id).caf"]
         return NSURL.fileURLWithPathComponents(pathComponents)!
     }
     

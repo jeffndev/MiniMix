@@ -7,6 +7,8 @@
 //
 
 import UIKit
+import CoreData
+
 //TODO: Add a Floating Star Review control to this
 //      I have an open source option: 
 //   https://github.com/glenyi/FloatRatingView
@@ -43,7 +45,7 @@ class SongInfoViewController: UIViewController {
         if let song = song {
             songNameTextField!.text = song.name
             if let rating = song.rating {
-                songStarRatings!.rating = rating
+                songStarRatings!.rating = Float(rating)
             }
             songDecriptionTextView.text = song.songDescription
             if let row = SongMix.genres.indexOf(song.genre) {
@@ -63,6 +65,34 @@ class SongInfoViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
+    
+    //MARK: Fetched Results Controllers And Core Data helper objects
+    var sharedContext: NSManagedObjectContext {
+        return CoreDataStackManager.sharedInstance.managedObjectContext
+    }
+//    lazy var userFetchedResultsController: NSFetchedResultsController = {
+//        let fetchRequest = NSFetchRequest(entityName: "User")
+//        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "socialName", ascending: true)]
+//        let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
+//            managedObjectContext: self.sharedContext,
+//            sectionNameKeyPath: nil,
+//            cacheName: nil)
+//        
+//        return fetchedResultsController
+//    }()
+//    
+//    lazy var songsFetchedResultsControllerForUser: NSFetchedResultsController = {
+//        let fetchRequest = NSFetchRequest(entityName: "SongMix")
+//        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+//        fetchRequest.predicate = NSPredicate(format: "artist == %@", self.currentUser)
+//        let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
+//            managedObjectContext: self.sharedContext,
+//            sectionNameKeyPath: nil,
+//            cacheName: nil)
+//        
+//        return fetchedResultsController
+//    }()
+
 
     /*
     // MARK: - Navigation
@@ -82,6 +112,8 @@ class SongInfoViewController: UIViewController {
             song.userInitialized = true
             song.rating = songStarRatings.rating
             song.songDescription = songDecriptionTextView.text
+            //WARNING: TODO: this maybe would be better in a delegate back to the SongList controller to do this..
+            CoreDataStackManager.sharedInstance.saveContext()
         }
         //
         self.dismissViewControllerAnimated(true, completion: nil)

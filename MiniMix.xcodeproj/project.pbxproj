@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		BD01CAFC1C766026000742C7 /* FloatRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD01CAFB1C766026000742C7 /* FloatRatingView.swift */; };
+		BD3591C11C91E887005B7AC5 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD3591C01C91E887005B7AC5 /* User.swift */; };
 		BD4023431C8668D400F315A2 /* California.otf in Resources */ = {isa = PBXBuildFile; fileRef = BDC7EF1F1C86504B00493749 /* California.otf */; };
 		BD5791671C6A6BFC0054742E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5791661C6A6BFC0054742E /* AppDelegate.swift */; };
 		BD57916C1C6A6BFC0054742E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BD57916A1C6A6BFC0054742E /* Main.storyboard */; };
@@ -28,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		BD01CAFB1C766026000742C7 /* FloatRatingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FloatRatingView.swift; sourceTree = "<group>"; };
+		BD3591C01C91E887005B7AC5 /* User.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		BD5791631C6A6BFC0054742E /* MiniMix.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MiniMix.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BD5791661C6A6BFC0054742E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		BD57916B1C6A6BFC0054742E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -109,6 +111,7 @@
 				BDC7EF1D1C8624E100493749 /* AudioCache.swift */,
 				BD8A8C2A1C75357C004E8220 /* SongMix.swift */,
 				BD8A8C241C750E49004E8220 /* AudioTrack.swift */,
+				BD3591C01C91E887005B7AC5 /* User.swift */,
 			);
 			name = Models;
 			sourceTree = "<group>";
@@ -202,6 +205,7 @@
 				BD8A8C291C7512F8004E8220 /* MasterTableViewCell.swift in Sources */,
 				BDC7EF1C1C86244200493749 /* CoreDataStackManager.swift in Sources */,
 				BD8A8C251C750E49004E8220 /* AudioTrack.swift in Sources */,
+				BD3591C11C91E887005B7AC5 /* User.swift in Sources */,
 				BD57917B1C6A7B110054742E /* SongInfoViewController.swift in Sources */,
 				BDC7EF1E1C8624E100493749 /* AudioCache.swift in Sources */,
 				BD8A8C2B1C75357C004E8220 /* SongMix.swift in Sources */,

@@ -8,6 +8,7 @@
 
 import UIKit
 import AVFoundation
+import CoreData
 
 protocol TrackControllerDelegate {
     func recordTrack(track: AudioTrack, completion: (success: Bool)->Void)
@@ -45,10 +46,20 @@ class SongMixerViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        if song.tracks.isEmpty {
-            song.tracks.append(AudioTrack(trackName: "Audio 1", type: .MIX, trackDescription: nil))
+        do {
+            try tracksFetchedResultsControllerForSong.performFetch()
+        } catch {
+            //TODO: do the appropriate thing
         }
+        tracksFetchedResultsControllerForSong.delegate = self
         
+        if let songs = tracksFetchedResultsControllerForSong.fetchedObjects {
+            if songs.isEmpty {
+                let track = AudioTrack(trackName: "Audio 1", trackType: AudioTrack.TrackType.MIX, trackOrder: 0, insertIntoManagedObjectContext: sharedContext)
+                track.song = song
+                CoreDataStackManager.sharedInstance.saveContext()
+            }
+        }
         // Do any additional setup after loading the view.
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .Add, target: self, action: "addTrack")
         navigationItem.hidesBackButton = true
@@ -63,10 +74,29 @@ class SongMixerViewController: UITableViewController {
         print("OOPS!! MEMORY WARNING...")
     }
     
+    //MARK: Fetched Results Controllers And Core Data helper objects
+    var sharedContext: NSManagedObjectContext {
+        return CoreDataStackManager.sharedInstance.managedObjectContext
+    }
+    
+    lazy var tracksFetchedResultsControllerForSong: NSFetchedResultsController = {
+        let fetchRequest = NSFetchRequest(entityName: "AudioTrack")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "displayOrder", ascending: true)]
+        fetchRequest.predicate = NSPredicate(format: "song == %@", self.song)
+        let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
+            managedObjectContext: self.sharedContext,
+            sectionNameKeyPath: nil,
+            cacheName: nil)
+        
+        return fetchedResultsController
+    }()
+    
     // MARK: helper functions
     func back() {
         //First time the song mix is created, AFTER recordings done, back to the Info Form
         //   after that, just go back to the list
+        CoreDataStackManager.sharedInstance.saveContext()
+        
         if !song!.userInitialized {
             let songInfoViewController = storyboard?.instantiateViewControllerWithIdentifier("SongInfoViewController") as! SongInfoViewController
             songInfoViewController.song = song
@@ -85,12 +115,19 @@ class SongMixerViewController: UITableViewController {
     
     // MARK: Actions
     func addTrack() {
-        if song.tracks.count < MAX_TRACKS {
-            let newTrack = AudioTrack(trackName: "Audio \(song.tracks.count+1)", type: .MIX, trackDescription: nil)
-            song.tracks.append(newTrack)
-            let newIndexPath = NSIndexPath(forRow: song.tracks.count-1, inSection: TRACKS_SECTION)
+        guard let fetchedTracks = tracksFetchedResultsControllerForSong.fetchedObjects as? [AudioTrack] else {
+            print("Could not fetch tracks, unable to add another track")
+            return
+        }
+        let trackCount = fetchedTracks.count
+        if trackCount < MAX_TRACKS {
+            let newTrack = AudioTrack(trackName: "Audio \(trackCount + 1)", trackType: AudioTrack.TrackType.MIX, trackOrder: Int32(trackCount), insertIntoManagedObjectContext: sharedContext)
+            newTrack.song = song
+            CoreDataStackManager.sharedInstance.saveContext()
+            //TODO: this should be moved to NSFetch..Delegate...
+            let newIndexPath = NSIndexPath(forRow: trackCount, inSection: TRACKS_SECTION)
             tableView.insertRowsAtIndexPaths([newIndexPath], withRowAnimation: .Automatic)
-            navigationItem.rightBarButtonItem?.enabled = song.tracks.count < MAX_TRACKS
+            navigationItem.rightBarButtonItem?.enabled = (trackCount + 1) < MAX_TRACKS
         }
     }
     
@@ -104,7 +141,11 @@ class SongMixerViewController: UITableViewController {
         if section == MASTER_SECTION {
             return 1
         } else {
-            return song.tracks.count
+            if let items = tracksFetchedResultsControllerForSong.fetchedObjects {
+                return items.count
+            } else {
+                return 0
+            }
         }
     }
     override func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -118,9 +159,10 @@ class SongMixerViewController: UITableViewController {
         if indexPath.section == TRACKS_SECTION {
             let cell = tableView.dequeueReusableCellWithIdentifier("TrackCell") as! TrackTableViewCell
             cell.delegate = self
-            cell.track = song.tracks[indexPath.row]
-            cell.trackNameTextView.text = song.tracks[indexPath.row].name
-            cell.volumeSlider.value = song.tracks[indexPath.row].mixVolume
+            let track = tracksFetchedResultsControllerForSong.objectAtIndexPath(indexPath) as! AudioTrack
+            cell.track = track
+            cell.trackNameTextView.text = track.name
+            cell.volumeSlider.value = Float(track.mixVolume)
             returnCell = cell
         } else {
             let cell = tableView.dequeueReusableCellWithIdentifier("MasterCell") as! MasterTableViewCell
@@ -139,22 +181,26 @@ class SongMixerViewController: UITableViewController {
         } else {
             let delete = UITableViewRowAction(style: .Destructive, title: "Delete") { action, idxPath in
                 let cell = self.tableView.cellForRowAtIndexPath(idxPath) as! TrackTableViewCell
-                guard let track = cell.track, let curSong = self.song else {
+                guard let track = cell.track else {
                     return
                 }
-                //delete audio file
-                do {
-                    try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: curSong).path!)
-                } catch let error as NSError {
-                    print("Could not delete track audio file: \(error)")
+                //delete audio file : TODO: delete the code below that is commented out...CoreData will take care of all that
+                dispatch_sync(dispatch_get_main_queue()) {
+                    self.sharedContext.deleteObject(track)
+                    CoreDataStackManager.sharedInstance.saveContext()
                 }
-                //delete track object
-                if let indexOfTrack = curSong.tracks.indexOf(track) {
-                    curSong.tracks.removeAtIndex(indexOfTrack)
-                }
-                //remove row in tableView
-                //TODO: dispatch to main queue?
-                self.tableView.deleteRowsAtIndexPaths([idxPath], withRowAnimation: .Automatic)
+//                do {
+//                    try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: curSong).path!)
+//                } catch let error as NSError {
+//                    print("Could not delete track audio file: \(error)")
+//                }
+//                //delete track object
+//                if let indexOfTrack = curSong.tracks.indexOf(track) {
+//                    curSong.tracks.removeAtIndex(indexOfTrack)
+//                }
+//                //remove row in tableView
+//                //TODO: dispatch to main queue?
+//                self.tableView.deleteRowsAtIndexPaths([idxPath], withRowAnimation: .Automatic)
             }
             return [delete]
         }
@@ -247,7 +293,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         for track in otherTracks {
             do {
                 let player = try AVAudioPlayer(contentsOfURL: AudioCache.trackPath(track, parentSong: song!))
-                player.volume = track.isMuted ? 0.0 : track.mixVolume
+                player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
                 players.append(player)
             } catch let error as NSError {
                 print("Could not create player for track(\(track.name): \(error)")
@@ -294,13 +340,20 @@ extension SongMixerViewController: TrackControllerDelegate {
                 completion(success: false)
             }
         }
-        track.hasRecordedFile = true
+        dispatch_async(dispatch_get_main_queue()) {
+            track.hasRecordedFile = true
+            CoreDataStackManager.sharedInstance.saveContext()
+        }
         completion(success: true)
     }
     func eraseTrackRecording(track: AudioTrack, completion: (success: Bool) -> Void) {
+        //TODO: use try BLOCK rather than this, to avoid crashing..
         try! NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: song).path!)
-        track.hasRecordedFile = false
-        track.lengthSeconds = 0.0
+        dispatch_async(dispatch_get_main_queue()) {
+            track.hasRecordedFile = false
+            track.lengthSeconds = 0.0
+            CoreDataStackManager.sharedInstance.saveContext()
+        }
         completion(success: true)
     }
     func stopTrackPlayback(track: AudioTrack) {
@@ -316,7 +369,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         do {
             path = AudioCache.trackPath(track, parentSong: song!)
             let player = try AVAudioPlayer(contentsOfURL: path)
-            player.volume = track.isMuted ? 0.0 : track.mixVolume
+            player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
             player.delegate = self
             players.append(player)
         } catch let error as NSError {
@@ -329,15 +382,17 @@ extension SongMixerViewController: TrackControllerDelegate {
 
     }
     func changeTrackVolumne(track: AudioTrack, newVolume volume: Float) {
+        //TODO: this is problematic..heavy processing here for every minute change in the slider
+        //  need to rework some of this..
         track.mixVolume = volume
         if let player = players.filter( { $0.url! == AudioCache.trackPath(track, parentSong: song!) } ).first {
-            player.volume = track.mixVolume
+            player.volume = Float(track.mixVolume)
         } 
     }
     func muteTrackPlayback(track: AudioTrack, doMute: Bool) {
         track.isMuted = doMute
         if let player = players.filter( { $0.url! == AudioCache.trackPath(track, parentSong: song!) } ).first {
-            player.volume = doMute ? 0.0 : track.mixVolume
+            player.volume = doMute ? 0.0 : Float(track.mixVolume)
         } else {
             print("couldnt find the player of the track to MUTE")
         }
@@ -357,7 +412,7 @@ extension SongMixerViewController: MasterPlaybackControllerDelegate {
             do {
                 path = AudioCache.trackPath(track, parentSong: song!)
                 let player = try AVAudioPlayer(contentsOfURL: path)
-                player.volume = track.isMuted ? 0.0 : track.mixVolume
+                player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
                 players.append(player)
             } catch let error as NSError {
                 print("could not create audio player for audio file at \(path.path!)\n  \(error.localizedDescription)")
@@ -393,4 +448,38 @@ extension SongMixerViewController: AVAudioPlayerDelegate {
         }
         //tableView.cellForRowAtIndexPath(<#T##indexPath: NSIndexPath##NSIndexPath#>)
     }
+}
+extension SongMixerViewController: NSFetchedResultsControllerDelegate {
+    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+        tableView.beginUpdates()
+    }
+    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+        tableView.endUpdates()
+    }
+    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
+        
+        switch type {
+        case .Insert:
+            if newIndexPath!.section == TRACKS_SECTION {
+                tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: .Automatic)
+            }
+            
+        case .Delete:
+            if indexPath!.section == TRACKS_SECTION {
+                tableView.deleteRowsAtIndexPaths([indexPath!], withRowAnimation: .Automatic)
+            }
+        case .Update:
+            if indexPath!.section == TRACKS_SECTION {
+                let cell = tableView.cellForRowAtIndexPath(indexPath!) as! TrackTableViewCell
+                //let actor = controller.objectAtIndexPath(indexPath!) as! Person
+                //self.configureCell(cell, withActor: actor)
+            }
+        case .Move:
+            print("moving cell")
+//            tableView.deleteRowsAtIndexPaths([indexPath!], withRowAnimation: .Fade)
+//            tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: .Fade)
+        }
+    }
+    
+    
 }
