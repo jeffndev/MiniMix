@@ -564,7 +564,7 @@
         <scene sceneID="VF4-49-LKR">
             <objects>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="G0h-IT-CCb" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" title="My Mixes" id="6iO-l7-NxW"/>
+                    <tabBarItem key="tabBarItem" title="My Mixes" image="tabNotes" id="6iO-l7-NxW"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="GsJ-ou-I8Q">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
@@ -585,7 +585,7 @@
         <scene sceneID="aRE-bx-M4R">
             <objects>
                 <navigationController id="XYx-Qu-IKN" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" title="Community Mixes" id="eMu-0b-e1T"/>
+                    <tabBarItem key="tabBarItem" title="Community Mixes" image="tabNotes" id="eMu-0b-e1T"/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="AeB-u2-L1L">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -993,5 +993,6 @@
         <image name="play" width="64" height="64"/>
         <image name="record" width="32" height="32"/>
         <image name="stop" width="64" height="64"/>
+        <image name="tabNotes" width="25" height="25"/>
     </resources>
 </document>

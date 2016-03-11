@@ -36,7 +36,6 @@ class SongMixerViewController: UITableViewController {
     var audioRecorder: AVAudioRecorder!
     var currentRecordingTrackRef: AudioTrack? //WARNING: I don't like these..
     var currentRecordingCell: TrackTableViewCell? //    got to make sure this is safe: using for Progess updates And StopRecord notify
-    //var audioSession: AVAudioSession!
     var players = [AVAudioPlayer]()
     var recordProgressTimer: NSTimer?
     var recordSeconds = 0
@@ -124,10 +123,6 @@ class SongMixerViewController: UITableViewController {
             let newTrack = AudioTrack(trackName: "Audio \(trackCount + 1)", trackType: AudioTrack.TrackType.MIX, trackOrder: Int32(trackCount), insertIntoManagedObjectContext: sharedContext)
             newTrack.song = song
             CoreDataStackManager.sharedInstance.saveContext()
-            //TODO: this should be moved to NSFetch..Delegate...
-            let newIndexPath = NSIndexPath(forRow: trackCount, inSection: TRACKS_SECTION)
-            tableView.insertRowsAtIndexPaths([newIndexPath], withRowAnimation: .Automatic)
-            navigationItem.rightBarButtonItem?.enabled = (trackCount + 1) < MAX_TRACKS
         }
     }
     
@@ -185,7 +180,7 @@ class SongMixerViewController: UITableViewController {
                     return
                 }
                 //delete audio file : TODO: delete the code below that is commented out...CoreData will take care of all that
-                dispatch_sync(dispatch_get_main_queue()) {
+                dispatch_async(dispatch_get_main_queue()) {
                     self.sharedContext.deleteObject(track)
                     CoreDataStackManager.sharedInstance.saveContext()
                 }
@@ -348,7 +343,10 @@ extension SongMixerViewController: TrackControllerDelegate {
     }
     func eraseTrackRecording(track: AudioTrack, completion: (success: Bool) -> Void) {
         //TODO: use try BLOCK rather than this, to avoid crashing..
-        try! NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: song).path!)
+        do {
+            try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: song).path!)
+        } catch {}
+        
         dispatch_async(dispatch_get_main_queue()) {
             track.hasRecordedFile = false
             track.lengthSeconds = 0.0
@@ -462,6 +460,10 @@ extension SongMixerViewController: NSFetchedResultsControllerDelegate {
         case .Insert:
             if newIndexPath!.section == TRACKS_SECTION {
                 tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: .Automatic)
+//                let newIndexPath = NSIndexPath(forRow: trackCount, inSection: TRACKS_SECTION)
+//                tableView.insertRowsAtIndexPaths([newIndexPath], withRowAnimation: .Automatic)
+                let trackCount = tracksFetchedResultsControllerForSong.fetchedObjects!.count
+                navigationItem.rightBarButtonItem?.enabled = (trackCount < MAX_TRACKS)
             }
             
         case .Delete:

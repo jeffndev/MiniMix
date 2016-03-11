@@ -94,4 +94,15 @@ class SongMix: NSManagedObject {
 //        }
 //        tracks.removeAll()
 //    }
+    
+    override func prepareForDeletion() {
+        for track in tracks {
+            print("Deleting track: \(track.name)....")
+            do {
+                try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: self).path!)
+            } catch let deleteTrackErr as NSError {
+                print("Failed to delete track file: \(deleteTrackErr)")
+            }
+        }
+    }
 }

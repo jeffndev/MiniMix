@@ -21,22 +21,20 @@ class SongListViewController: UIViewController {
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var shareButton: UIBarButtonItem!
     
-    var initializingUser = true
     var currentUser: User!
-    //var songs = [SongMix]()
     var players = [AVAudioPlayer]()
     
+    //MARK: Lifecycle overrides...
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.dataSource = self
         tableView.delegate = self
        
         //USER
-        initializingUser = true
         do {
             try userFetchedResultsController.performFetch()
         } catch {}
-        userFetchedResultsController.delegate = self
+        
         guard let fetchedUsers = userFetchedResultsController.fetchedObjects as? [User] else {
             abort()
         }
@@ -47,13 +45,13 @@ class SongListViewController: UIViewController {
             currentUser = User(context: sharedContext)
             CoreDataStackManager.sharedInstance.saveContext()
         }
-        initializingUser = false
-        
+        print("user name: \(currentUser.socialName)")
         //SONGS for User
         do {
             try songsFetchedResultsControllerForUser.performFetch()
         } catch {}
         songsFetchedResultsControllerForUser.delegate = self
+        print("song count: \(songsFetchedResultsControllerForUser.fetchedObjects!.count)")
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -80,32 +78,28 @@ class SongListViewController: UIViewController {
     
     lazy var songsFetchedResultsControllerForUser: NSFetchedResultsController = {
         let fetchRequest = NSFetchRequest(entityName: "SongMix")
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        fetchRequest.sortDescriptors = [ NSSortDescriptor(key: "genre", ascending: true), NSSortDescriptor(key: "name", ascending: true) ]
         fetchRequest.predicate = NSPredicate(format: "artist == %@", self.currentUser)
         let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
             managedObjectContext: self.sharedContext,
-            sectionNameKeyPath: nil,
+            sectionNameKeyPath: "genre",
             cacheName: nil)
         
         return fetchedResultsController
     }()
 
-    
+    //MARK: Actions.....
     @IBAction func addNewSong() {
         let recordViewController = storyboard!.instantiateViewControllerWithIdentifier("SongMixerViewController") as! SongMixerViewController
         let newSong = SongMix(songName: "New Song", insertIntoManagedObjectContext: sharedContext)
-        //songs.append(newSong)
         newSong.artist = currentUser
         CoreDataStackManager.sharedInstance.saveContext()
+        print("song count: \(songsFetchedResultsControllerForUser.fetchedObjects!.count)")
         recordViewController.song = newSong
-//        let songsInGenre = songs.filter { $0.genre == newSong.genre }
-//        let insertIndexPath = NSIndexPath(forRow: songsInGenre.count - 1, inSection: SongMix.genres.indexOf(newSong.genre)!)
-//        tableView.insertRowsAtIndexPaths([insertIndexPath], withRowAnimation: .Automatic)
         navigationController!.pushViewController(recordViewController, animated: true)
     }
     @IBAction func shareAction() {
         if let indexPath = tableView.indexPathForSelectedRow {
-            //let song = getSelectedSong(forIndexPath: indexPath)
             let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
             if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
                 //TODO: mix it...perhaps dispatch to main queue?
@@ -184,27 +178,25 @@ class SongListViewController: UIViewController {
 extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     //MARK: Data Source protocols
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let songs = songsFetchedResultsControllerForUser.fetchedObjects as! [SongMix]
-        let songsInGenre = songs.filter { $0.genre == SongMix.genres[section]}
-        return songsInGenre.count
+        let targetSection = songsFetchedResultsControllerForUser.sections![section]
+        return targetSection.numberOfObjects
     }
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier(CELL_ID) as! SongListingTableViewCell
-        //let song = getSelectedSong(forIndexPath: indexPath)
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
-        cell.songTitleLabel.text = song.name
-        cell.songCommentLabel.text = song.songDescription ?? ""
-        cell.songStarsRankLable.text = song.rating == nil ? "" : String(Int(song.rating!))
-        cell.song = song
-        cell.delegate = self
+        configureCell(cell, withSongMix: song)
         return cell
     }
     func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         //THE NAME OF THE GENRE
-        return SongMix.genres[section]
+        //return SongMix.genres[section]
+        let targetSection = songsFetchedResultsControllerForUser.sections![section]
+        return targetSection.name
+
     }
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
-        return SongMix.genres.count
+        //return SongMix.genres.count
+        return songsFetchedResultsControllerForUser.sections!.count
     }
     //MARK: Delegate protocols
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
@@ -252,19 +244,16 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
 //        tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Automatic)
     }
     func toCloudAction(indexPath: NSIndexPath) {
-        //let song = getSelectedSong(forIndexPath: indexPath)
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
         print("Sharing to cloud: \(song.name)")
     }
     func remixAction(indexPath: NSIndexPath) {
-        //let song = getSelectedSong(forIndexPath: indexPath)
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
         let recordViewController = storyboard!.instantiateViewControllerWithIdentifier("SongMixerViewController") as! SongMixerViewController
         recordViewController.song = song
         navigationController!.pushViewController(recordViewController, animated: true)
     }
     func editinfoAction(indexPath: NSIndexPath) {
-        // let song = getSelectedSong(forIndexPath: indexPath)
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
         let songInfoViewController = storyboard?.instantiateViewControllerWithIdentifier("SongInfoViewController") as! SongInfoViewController
         songInfoViewController.song = song
@@ -277,6 +266,7 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
 //        return songsInGenre[indexPath.row]
 //    }
 }
+//MARK: SongPlayback Delegate Protocols...
 extension SongListViewController: SongPlaybackDelegate {
     func playSong(song: SongMix) {
         playMixNaiveImplementation(song)
@@ -305,36 +295,58 @@ extension SongListViewController: SongPlaybackDelegate {
         }
     }
 }
-
+//MARK: FetchedResults Delegate Protocols...
 extension SongListViewController: NSFetchedResultsControllerDelegate {
     func controllerWillChangeContent(controller: NSFetchedResultsController) {
-        if initializingUser {
-            return
-        }
         tableView.beginUpdates()
     }
     func controllerDidChangeContent(controller: NSFetchedResultsController) {
-        if initializingUser {
-            return
-        }
         tableView.endUpdates()
     }
-    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
-        if initializingUser {
-            return
-        }
+    func controller(controller: NSFetchedResultsController, didChangeSection sectionInfo: NSFetchedResultsSectionInfo, atIndex sectionIndex: Int, forChangeType type: NSFetchedResultsChangeType) {
+        
         switch type {
         case .Insert:
+            tableView.insertSections(NSIndexSet(index: sectionIndex), withRowAnimation: .Automatic)
+        case .Delete:
+            tableView.deleteSections(NSIndexSet(index: sectionIndex), withRowAnimation: .Automatic)
+        case .Update:
+            print("section did change Update: \(sectionInfo.name)")
+        case .Move:
+            print("section did change Move: \(sectionInfo.name)")
+        }
+        
+    }
+    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
+        
+        switch type {
+        case .Insert:
+            if let newSong = anObject as? SongMix {
+                print("New song genre: \(newSong.genre)")
+            }
+            print("section of new songs cell: \(newIndexPath!.section)")
             tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: .Automatic)
         case .Delete:
             tableView.deleteRowsAtIndexPaths([indexPath!], withRowAnimation: .Automatic)
         case .Update:
-            print("update not handled")
+            guard let cell = tableView.cellForRowAtIndexPath(indexPath!) as? SongListingTableViewCell else {
+                print("Could not update cell, was nil")
+                return
+            }
+            if let song = anObject as? SongMix {
+                configureCell(cell, withSongMix: song)
+            }
         case .Move:
             tableView.deleteRowsAtIndexPaths([indexPath!], withRowAnimation: .Fade)
             tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: .Fade)
         }
-        
     }
-    
+    //MARK: Configure Cell
+    func configureCell( cell: SongListingTableViewCell, withSongMix song: SongMix) {
+        cell.songTitleLabel.text = song.name
+        cell.songCommentLabel.text = song.songDescription ?? ""
+        cell.songStarsRankLable.text = song.rating == nil ? "" : String(Int(song.rating!))
+        cell.song = song
+        cell.delegate = self
+    }
 }

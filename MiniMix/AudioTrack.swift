@@ -75,12 +75,15 @@ class AudioTrack: NSManagedObject {
     override func prepareForDeletion() {
         super.prepareForDeletion()
         print("Deleting track: \(name)....")
+        //IT seems that the song object gets killed first, before the cascade deletes do the tracks
+        //  SO, the only time this will work will be when the Song is still alive..ie deleting a track in Mix View
+        //  The Full deletion of the Song and the cascading takes care of deleting the track audio files, so got it covered both ways
         guard let parentSong = song else {
-            print("parent song was nil for this track")
+            print("parent song id was nil for this track")
             return
         }
         do {
-        try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(self, parentSong: parentSong).path!)
+            try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(self, parentSong: parentSong).path!)
         } catch let deleteTrackErr as NSError {
             print("Failed to delete track file: \(deleteTrackErr)")
         }
