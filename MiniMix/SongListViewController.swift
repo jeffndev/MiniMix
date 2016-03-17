@@ -103,7 +103,7 @@ class SongListViewController: UIViewController {
             let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
             if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
                 //TODO: mix it...perhaps dispatch to main queue?
-                createSongMixFile(song) { success in
+                AudioHelpers.createSongMixFile(song) { success in
                     if success {
                         self.shareMixFile(song)
                     } else {
@@ -136,43 +136,43 @@ class SongListViewController: UIViewController {
         }
     }
     
-    func createSongMixFile(song: SongMix, postHandler: (success: Bool) -> Void) {
-        let composition = AVMutableComposition()
-        var inputMixParms = [AVAudioMixInputParameters]()
-        for track in song.tracks {
-            let trackUrl = AudioCache.trackPath(track, parentSong: song)
-            let audioAsset = AVURLAsset(URL: trackUrl)
-            let audioCompositionTrack = composition.addMutableTrackWithMediaType(AVMediaTypeAudio, preferredTrackID: kCMPersistentTrackID_Invalid)
-            do {
-                try audioCompositionTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, audioAsset.duration), ofTrack: audioAsset.tracksWithMediaType(AVMediaTypeAudio).first!, atTime: kCMTimeZero)
-            }catch {
-                postHandler(success: false)
-                return
-            }
-            let mixParm = AVMutableAudioMixInputParameters(track: audioCompositionTrack)
-            inputMixParms.append(mixParm)
-        }
-        //EXPORT
-        let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
-        let mixUrl = AudioCache.mixedSongPath(song)
-        do {
-            try NSFileManager.defaultManager().removeItemAtPath(mixUrl.path!)
-        } catch {
-            
-        }
-        if let export = export {
-            let mixParms = AVMutableAudioMix()
-            mixParms.inputParameters = inputMixParms
-            export.audioMix = mixParms
-            export.outputFileType = AVFileTypeAppleM4A
-            export.outputURL = mixUrl
-            export.exportAsynchronouslyWithCompletionHandler {
-                postHandler(success: true)
-                print("EXPORTED..try to play it now")
-            }
-        }
-
-    }
+//    func createSongMixFile(song: SongMix, postHandler: (success: Bool) -> Void) {
+//        let composition = AVMutableComposition()
+//        var inputMixParms = [AVAudioMixInputParameters]()
+//        for track in song.tracks {
+//            let trackUrl = AudioCache.trackPath(track, parentSong: song)
+//            let audioAsset = AVURLAsset(URL: trackUrl)
+//            let audioCompositionTrack = composition.addMutableTrackWithMediaType(AVMediaTypeAudio, preferredTrackID: kCMPersistentTrackID_Invalid)
+//            do {
+//                try audioCompositionTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, audioAsset.duration), ofTrack: audioAsset.tracksWithMediaType(AVMediaTypeAudio).first!, atTime: kCMTimeZero)
+//            }catch {
+//                postHandler(success: false)
+//                return
+//            }
+//            let mixParm = AVMutableAudioMixInputParameters(track: audioCompositionTrack)
+//            inputMixParms.append(mixParm)
+//        }
+//        //EXPORT
+//        let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
+//        let mixUrl = AudioCache.mixedSongPath(song)
+//        do {
+//            try NSFileManager.defaultManager().removeItemAtPath(mixUrl.path!)
+//        } catch {
+//            
+//        }
+//        if let export = export {
+//            let mixParms = AVMutableAudioMix()
+//            mixParms.inputParameters = inputMixParms
+//            export.audioMix = mixParms
+//            export.outputFileType = AVFileTypeAppleM4A
+//            export.outputURL = mixUrl
+//            export.exportAsynchronouslyWithCompletionHandler {
+//                postHandler(success: true)
+//                print("EXPORTED..try to play it now")
+//            }
+//        }
+//
+//    }
 }
 //MARK: table view data soure and delegate protocols
 extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
@@ -232,21 +232,75 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func deleteAction(indexPath: NSIndexPath) {
-        //let song = getSelectedSong(forIndexPath: indexPath)
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
         sharedContext.deleteObject(song)
         CoreDataStackManager.sharedInstance.saveContext()
-        //TODO: this will go away when CoreData is added along with Cascade on the tracks relationship, plus a prepareForDelete on the track objects
-//        song.deleteTracks()
-//        if let deleteIndex = songs.indexOf(song) {
-//            songs.removeAtIndex(deleteIndex)
-//        }
-//        tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Automatic)
     }
     func toCloudAction(indexPath: NSIndexPath) {
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
         print("Sharing to cloud: \(song.name)")
+        //FLOW:  after user chooses an action (private or community), attempt to login to the API, get a session.
+        //   unless...if not registered and all info is blank, then immediately jump to the sign-in modal
+        //   when the modal exits, push the share song action (whichever it is) back on the stack..activiy indicator..success..
+        //   (only show something if there is a problem, just silently dismiss the alerts and actitivy indicator after done)
+        //
+        //
+        if #available(iOS 8.0, *) {
+            let alert = UIAlertController(title: "Share to Cloud", message: nil, preferredStyle: .ActionSheet) //maybe .Alert style better??
+            let shareWithCommunity = UIAlertAction(title: "Share with Community", style: .Default) { action in
+                print("community share")
+                self.cloudUploadActivity(song, keepPrivate: false)
+            }
+            alert.addAction(shareWithCommunity)
+            let savePrivate = UIAlertAction(title: "Save as Private", style: .Default) { action in
+                print("private shareing")
+                self.cloudUploadActivity(song, keepPrivate: true)
+            }
+            alert.addAction(savePrivate)
+            
+            presentViewController(alert, animated: true, completion: nil)
+        } else {
+            // Fallback on earlier versions
+        }
     }
+    func cloudUploadActivity(song: SongMix, keepPrivate: Bool) {
+        guard let currentUser = currentUser else {
+            print("nil current user...")
+            return
+        }
+        let userEmail = currentUser.email
+        let userPwd = currentUser.servicePassword
+        let userMoniker = currentUser.socialName
+        
+        if !currentUser.isRegistered || currentUser.servicePassword.isEmpty || currentUser.email.isEmpty {
+            let signInViewController = storyboard?.instantiateViewControllerWithIdentifier("CommunitySignInViewController") as! CommunityShareSignInViewController
+            presentViewController(signInViewController, animated: true) {
+                if self.currentUser.isRegistered {
+                    //TODO: push the song to the API
+                    let api = MiniMixCommunityAPI()
+                    api.uploadSong(userEmail, password: userPwd, song: song) { success, message, error in
+                        //TODO: probably want to indicate the "uploaded_to_cloud", the song and tracks s3 urls and id's and save locally..
+                    }
+                } else {
+                    //TODO: fail somehow..gotta let user know
+                }
+            }
+            return
+        } else {
+            let api = MiniMixCommunityAPI()
+            api.signin(userEmail, password: userPwd, publicName: userMoniker) { success, message, error in
+                if(success) {
+                    //let inner_api = MiniMixCommunityAPI()
+                    api.uploadSong(userEmail, password: userPwd, song: song) { success, message, error in
+                        print(success)
+                    }
+                } else {
+                    //have to figure out which kinds of errors...if need to signup again or something would need the signin modal, otherwise, just tell user sorry, try again
+                }
+            }
+        }
+    }
+    
     func remixAction(indexPath: NSIndexPath) {
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
         let recordViewController = storyboard!.instantiateViewControllerWithIdentifier("SongMixerViewController") as! SongMixerViewController

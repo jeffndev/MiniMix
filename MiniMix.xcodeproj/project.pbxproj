@@ -22,9 +22,12 @@
 		BD8A8C271C7512E8004E8220 /* TrackTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8A8C261C7512E8004E8220 /* TrackTableViewCell.swift */; };
 		BD8A8C291C7512F8004E8220 /* MasterTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8A8C281C7512F8004E8220 /* MasterTableViewCell.swift */; };
 		BD8A8C2B1C75357C004E8220 /* SongMix.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8A8C2A1C75357C004E8220 /* SongMix.swift */; };
+		BD8F899A1C99CD3C009B766E /* AudioHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8F89991C99CD3C009B766E /* AudioHelpers.swift */; };
 		BDC7EF1C1C86244200493749 /* CoreDataStackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC7EF1B1C86244200493749 /* CoreDataStackManager.swift */; };
 		BDC7EF1E1C8624E100493749 /* AudioCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC7EF1D1C8624E100493749 /* AudioCache.swift */; };
 		BDC7EF211C86591C00493749 /* SongListingTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC7EF201C86591C00493749 /* SongListingTableViewCell.swift */; };
+		BDCF83501C93747100DE54F7 /* CommunityShareSignInViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCF834F1C93747100DE54F7 /* CommunityShareSignInViewController.swift */; };
+		BDCF83521C937B7500DE54F7 /* MiniMixCommunityAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCF83511C937B7500DE54F7 /* MiniMixCommunityAPI.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,10 +47,13 @@
 		BD8A8C261C7512E8004E8220 /* TrackTableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TrackTableViewCell.swift; sourceTree = "<group>"; };
 		BD8A8C281C7512F8004E8220 /* MasterTableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MasterTableViewCell.swift; sourceTree = "<group>"; };
 		BD8A8C2A1C75357C004E8220 /* SongMix.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SongMix.swift; sourceTree = "<group>"; };
+		BD8F89991C99CD3C009B766E /* AudioHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioHelpers.swift; sourceTree = "<group>"; };
 		BDC7EF1B1C86244200493749 /* CoreDataStackManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreDataStackManager.swift; sourceTree = "<group>"; };
 		BDC7EF1D1C8624E100493749 /* AudioCache.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioCache.swift; sourceTree = "<group>"; };
 		BDC7EF1F1C86504B00493749 /* California.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = California.otf; sourceTree = "<group>"; };
 		BDC7EF201C86591C00493749 /* SongListingTableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SongListingTableViewCell.swift; sourceTree = "<group>"; };
+		BDCF834F1C93747100DE54F7 /* CommunityShareSignInViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CommunityShareSignInViewController.swift; sourceTree = "<group>"; };
+		BDCF83511C937B7500DE54F7 /* MiniMixCommunityAPI.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MiniMixCommunityAPI.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,9 +94,11 @@
 				BD5791661C6A6BFC0054742E /* AppDelegate.swift */,
 				BDC7EF1B1C86244200493749 /* CoreDataStackManager.swift */,
 				BD7C69641C90E964005825A2 /* Model.xcdatamodeld */,
+				BDCF83531C937B7D00DE54F7 /* ApiProviders */,
 				BDC7EF191C8623BC00493749 /* Models */,
 				BDC7EF1A1C8623EE00493749 /* ViewControllers */,
 				BD01CAFB1C766026000742C7 /* FloatRatingView.swift */,
+				BD8F89991C99CD3C009B766E /* AudioHelpers.swift */,
 			);
 			path = MiniMix;
 			sourceTree = "<group>";
@@ -123,8 +131,17 @@
 				BD57917C1C6A7B470054742E /* SongMixerViewController.swift */,
 				BD5791781C6A761E0054742E /* SongListViewController.swift */,
 				BD57917A1C6A7B110054742E /* SongInfoViewController.swift */,
+				BDCF834F1C93747100DE54F7 /* CommunityShareSignInViewController.swift */,
 			);
 			name = ViewControllers;
+			sourceTree = "<group>";
+		};
+		BDCF83531C937B7D00DE54F7 /* ApiProviders */ = {
+			isa = PBXGroup;
+			children = (
+				BDCF83511C937B7500DE54F7 /* MiniMixCommunityAPI.swift */,
+			);
+			name = ApiProviders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -210,9 +227,12 @@
 				BDC7EF1E1C8624E100493749 /* AudioCache.swift in Sources */,
 				BD8A8C2B1C75357C004E8220 /* SongMix.swift in Sources */,
 				BD01CAFC1C766026000742C7 /* FloatRatingView.swift in Sources */,
+				BD8F899A1C99CD3C009B766E /* AudioHelpers.swift in Sources */,
 				BD5791791C6A761E0054742E /* SongListViewController.swift in Sources */,
 				BD7C69661C90E964005825A2 /* Model.xcdatamodeld in Sources */,
 				BD57917D1C6A7B470054742E /* SongMixerViewController.swift in Sources */,
+				BDCF83521C937B7500DE54F7 /* MiniMixCommunityAPI.swift in Sources */,
+				BDCF83501C93747100DE54F7 /* CommunityShareSignInViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

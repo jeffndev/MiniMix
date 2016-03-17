@@ -74,6 +74,12 @@ class AudioCache {
 //    }
     
     // MARK: - Helper
+    class func trackAudioAsData(track: AudioTrack) -> NSData {
+        return NSData(contentsOfURL: AudioCache.trackPath(track, parentSong: track.song!))!
+    }
+    class func mixedSongAsData(song: SongMix) -> NSData {
+        return NSData(contentsOfURL: AudioCache.mixedSongPath(song))!
+    }
     
     class func songDirectory(song: SongMix) -> String {
         let documentsDirectoryURL: NSURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!

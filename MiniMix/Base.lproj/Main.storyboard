@@ -379,7 +379,7 @@
             </objects>
             <point key="canvasLocation" x="2344" y="14"/>
         </scene>
-        <!--Song List View Controller-->
+        <!--MiniMix-->
         <scene sceneID="W8K-56-9a6">
             <objects>
                 <viewController id="Mlb-fq-5Jo" customClass="SongListViewController" customModule="MiniMix" customModuleProvider="target" sceneMemberID="viewController">
@@ -535,7 +535,7 @@
                     </view>
                     <extendedEdge key="edgesForExtendedLayout" bottom="YES"/>
                     <toolbarItems/>
-                    <navigationItem key="navigationItem" id="rtF-fT-sEG">
+                    <navigationItem key="navigationItem" title="MiniMix" id="rtF-fT-sEG">
                         <rightBarButtonItems>
                             <barButtonItem systemItem="add" id="zfE-gu-7AG">
                                 <connections>
@@ -571,6 +571,9 @@
                         <autoresizingMask key="autoresizingMask"/>
                         <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <color key="barTintColor" red="0.40671590379349137" green="0.72129706996434928" blue="0.11888619520724653" alpha="1" colorSpace="calibratedRGB"/>
+                        <textAttributes key="titleTextAttributes">
+                            <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        </textAttributes>
                     </navigationBar>
                     <nil name="viewControllers"/>
                     <connections>
@@ -825,6 +828,86 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="YzR-iW-8Rx" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1595" y="727"/>
+        </scene>
+        <!--Community Share Sign In View Controller-->
+        <scene sceneID="0ga-Uf-siE">
+            <objects>
+                <viewController storyboardIdentifier="CommunitySignInViewController" id="z3g-k0-kVf" customClass="CommunityShareSignInViewController" customModule="MiniMix" customModuleProvider="target" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="oCy-4k-hHc"/>
+                        <viewControllerLayoutGuide type="bottom" id="XEp-9h-wNX"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="Arb-B5-Kf4">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Enter Email" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Nni-6A-4YZ">
+                                <rect key="frame" x="40" y="70" width="520" height="34"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="34" id="qZK-Ip-CGU"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Enter Password" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Ylt-Rj-TaM">
+                                <rect key="frame" x="40" y="132" width="520" height="34"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="34" id="cJ7-PZ-9iT"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits" spellCheckingType="no" secureTextEntry="YES"/>
+                            </textField>
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Enter Public Name" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="08e-4H-taC">
+                                <rect key="frame" x="40" y="194" width="520" height="34"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="34" id="cyM-yy-xcT"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vs1-l0-ta5">
+                                <rect key="frame" x="224" y="512" width="153" height="32"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="32" id="DKV-nu-2ga"/>
+                                </constraints>
+                                <state key="normal" title="Register Your Account"/>
+                                <connections>
+                                    <action selector="registerAction" destination="z3g-k0-kVf" eventType="touchUpInside" id="zx1-Uz-Y18"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="Nni-6A-4YZ" firstAttribute="top" secondItem="oCy-4k-hHc" secondAttribute="bottom" constant="50" id="Abv-lK-S46"/>
+                            <constraint firstItem="Ylt-Rj-TaM" firstAttribute="leading" secondItem="Nni-6A-4YZ" secondAttribute="leading" id="Qf2-UY-JKu"/>
+                            <constraint firstItem="Ylt-Rj-TaM" firstAttribute="top" secondItem="Nni-6A-4YZ" secondAttribute="bottom" constant="28" id="SGF-pZ-s7O"/>
+                            <constraint firstItem="vs1-l0-ta5" firstAttribute="trailing" secondItem="08e-4H-taC" secondAttribute="trailing" id="UMS-IF-aW6"/>
+                            <constraint firstItem="XEp-9h-wNX" firstAttribute="top" secondItem="vs1-l0-ta5" secondAttribute="bottom" constant="56" id="e2I-fA-Rh2"/>
+                            <constraint firstItem="Ylt-Rj-TaM" firstAttribute="trailing" secondItem="Nni-6A-4YZ" secondAttribute="trailing" id="hEE-qo-5pz"/>
+                            <constraint firstItem="vs1-l0-ta5" firstAttribute="centerX" secondItem="Arb-B5-Kf4" secondAttribute="centerX" id="jaf-hR-HKp"/>
+                            <constraint firstItem="Nni-6A-4YZ" firstAttribute="leading" secondItem="Arb-B5-Kf4" secondAttribute="leadingMargin" constant="20" id="oIl-wA-w5t"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="Nni-6A-4YZ" secondAttribute="trailing" constant="20" id="ofJ-LG-eUf"/>
+                            <constraint firstItem="08e-4H-taC" firstAttribute="top" secondItem="Ylt-Rj-TaM" secondAttribute="bottom" constant="28" id="p4U-xG-7qy"/>
+                            <constraint firstItem="08e-4H-taC" firstAttribute="leading" secondItem="Ylt-Rj-TaM" secondAttribute="leading" id="phH-g8-BQr"/>
+                            <constraint firstItem="vs1-l0-ta5" firstAttribute="leading" secondItem="08e-4H-taC" secondAttribute="leading" id="smt-06-jGw"/>
+                            <constraint firstItem="08e-4H-taC" firstAttribute="trailing" secondItem="Ylt-Rj-TaM" secondAttribute="trailing" id="tNP-0d-7G5"/>
+                        </constraints>
+                        <variation key="default">
+                            <mask key="constraints">
+                                <exclude reference="UMS-IF-aW6"/>
+                                <exclude reference="smt-06-jGw"/>
+                            </mask>
+                        </variation>
+                    </view>
+                    <connections>
+                        <outlet property="emailTextField" destination="Nni-6A-4YZ" id="aCu-Ni-KwK"/>
+                        <outlet property="passwordTextField" destination="Ylt-Rj-TaM" id="s43-NV-Wa6"/>
+                        <outlet property="publicMonikerTextField" destination="08e-4H-taC" id="d5b-xC-DvG"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="LOF-hT-c8j" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="3083" y="488"/>
         </scene>
         <!--Song List View Controller-->
         <scene sceneID="MFe-4C-c2d">
