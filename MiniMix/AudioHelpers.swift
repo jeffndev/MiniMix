@@ -30,6 +30,9 @@ struct AudioHelpers {
             inputMixParms.append(mixParm)
         }
         //EXPORT
+        //TODO: change this to export mp3's because I can't, generally, attach m4a's to audio tags in web pages, and I want that for the web site portal
+        //      here's one possible way: http://stackoverflow.com/questions/24111026/avassetexportsession-export-mp3-while-keeping-metadata
+        //      change type to ...Passthrough, then change file type to com.apple.quicktime-movie, then rename file to .mp3 ending
         let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
         let mixUrl = AudioCache.mixedSongPath(song)
         do {
@@ -41,11 +44,17 @@ struct AudioHelpers {
             let mixParms = AVMutableAudioMix()
             mixParms.inputParameters = inputMixParms
             export.audioMix = mixParms
+            //TODO: change to: com.apple.quicktime-movie
             export.outputFileType = AVFileTypeAppleM4A
             export.outputURL = mixUrl
             export.exportAsynchronouslyWithCompletionHandler {
-                postHandler(success: true)
-                print("EXPORTED..try to play it now")
+                if export.status == .Completed {
+                    postHandler(success: true)
+                    print("EXPORTED success..try to play it now")
+                } else {
+                    postHandler(success: false)
+                    print("EXPORT file mix failed..")
+                }
             }
         }
     }
