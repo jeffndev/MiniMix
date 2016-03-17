@@ -14,13 +14,15 @@ class AudioTrack: NSManagedObject {
         static let ID = "id"
         static let Name = "name"
         static let CreatedAt = "created_at"
-        static let TrackType = "mix_or_track"
+        static let TrackType = "mix_or_track" //TODO: this may go away..not needed
         static let TrackDescription = "track_description"
         static let DurationSeconds = "track_duration_secs"
         static let MixVolume = "mix_volume"
         static let HasRecordedFile = "has_audio_file"
         static let TrackDisplayOrder = "display_order"
     }
+    //TODO: may not be neded, since the song is not really a Track,
+    //   and the actual files are stored separately..
     struct TrackType {
         static let MIX = "mix"
         static let MASTER = "master"

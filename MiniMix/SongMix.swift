@@ -10,7 +10,7 @@ import CoreData
 
 class SongMix: NSManagedObject {
     struct Keys {
-        static let ID = "id"
+        static let ID = "song_identifier_hash"
         static let Name = "name"
         static let Genre = "genre"
         static let SongDescription = "song_description"

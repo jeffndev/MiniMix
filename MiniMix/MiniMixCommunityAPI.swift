@@ -130,95 +130,18 @@ class MiniMixCommunityAPI {
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
         request.HTTPMethod = "POST"
+        //HTTP HEADERS...
         let contentTypeHdr = "multipart/form-data; boundary=\(boundary)"
         request.addValue(contentTypeHdr, forHTTPHeaderField: "Content-Type") //WARNING: CONTENT TYPE: code repeats, need to pull to function..
         let basicAuthString = "\(API_AUTH_NAME):\(API_AUTH_PASSWORD)"
         let utf8str = basicAuthString.dataUsingEncoding(NSUTF8StringEncoding)
         let base64EncodedString = utf8str?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0))
         request.addValue("Basic \(base64EncodedString!)", forHTTPHeaderField: "Authorization")//WARNING: AUTHORIZATION HDR: code repeats, need to pull to function..
-        
-        let dataPiecesForBody = NSMutableData()
-        let boundaryString = "--\(boundary)\r\n"
-        let closignString = "\r\n"
-        let boundaryData0 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
-        //HEAD PIECE
-        dataPiecesForBody.appendData(boundaryData0)
-        let formData_userEmail_meta = "Content-Disposition: form-data; name=\"email\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(formData_userEmail_meta!)
-        let formData_userEmail = email.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(formData_userEmail!)
-        dataPiecesForBody.appendData(closignString.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
-        dataPiecesForBody.appendData(boundaryString.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
-        //MIX FILE PIECE
-        //-----------------------------------
-           //parameter name
-        let mixFileMetaData = "Content-Disposition: attachment; name=\"mix\"; filename=\"mixfile.m4a\"\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixFileMetaData!)
-           //content type
-        let mixfileContentType = "Content-Type: application/octet-stream\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixfileContentType!)
-           //audio file data
-        dataPiecesForBody.appendData(AudioCache.mixedSongAsData(song))
-           //end line
-        let mixfileDataEnding = "\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixfileDataEnding!)
-           //boundary
-        let boundaryData2 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
-        dataPiecesForBody.appendData(boundaryData2)
-        //MIX FILE META DATA as Form Data
-        //---------------------------------------
-          // ID of the song
-        let mixFormData_ID_meta = "Content-Disposition: form-data; name=\"song_id\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixFormData_ID_meta!)
-        let mixFormData_ID = song.id.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixFormData_ID!)
-        let mix_ID_closing = "\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mix_ID_closing!)
-        let boundaryData3 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
-        dataPiecesForBody.appendData(boundaryData3)
-          // name of the song
-        let mixFormData_songname_meta = "Content-Disposition: form-data; name=\"song_name\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixFormData_songname_meta!)
-        let mixFormData_name = song.name.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixFormData_name!)
-        let mix_name_closing = "\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mix_name_closing!)
-        let boundaryData4 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
-        dataPiecesForBody.appendData(boundaryData4)
-          // genre of the song
-        let mixFormData_genre_meta = "Content-Disposition: form-data; name=\"genre\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixFormData_genre_meta!)
-        let mixFormData_genre = song.genre.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mixFormData_genre!)
-        let mix_genre_closing = "\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
-        dataPiecesForBody.appendData(mix_genre_closing!)
-        
-        //let boundaryData5 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
-        //dataPiecesForBody.appendData(boundaryData5)
-          // description of the song
-        
-          // self rating of the song
-        
-          // song duration in seconds
-        
-          // last update (updated_at)
-        //....END SONG MIX DATA....
-        
-        //...TRACKS..........
-        for track in song.tracks {
-            //TRACK AUDIO FILE....
-            print(track.name)
-            //TRACK META DATA as Form Data..
-        }
-        let closingData = "--\(boundary)--\r\n"
-        let boundaryDataEnd = closingData.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
-        
-        dataPiecesForBody.appendData(boundaryDataEnd)
-        
-        request.HTTPBody = dataPiecesForBody
+        //HTTP Body..
+        request.HTTPBody = mixFileUploadPayload(email, song: song, htmlMultipartFormBoundary: boundary)
         //GOT REQUEST....
         let session = NSURLSession.sharedSession()
-        let task = session.dataTaskWithRequest(request) { data, response, error in
+        let songTask = session.dataTaskWithRequest(request) { data, response, error in
             //Do stuff...
             
             guard let data = data else {
@@ -234,14 +157,13 @@ class MiniMixCommunityAPI {
                 return
             }
             print(parsedResult)
-            guard let jsonDictionary = parsedResult as? [String: AnyObject] else {
+            guard let _ = parsedResult as? [String: AnyObject] else {
                 completion!(success: false, message: "signup failed to return parseable json", error: nil)
                 return
             }
             completion!(success: true, message: nil, error: nil)
         }
-        task.resume()
-        
+        songTask.resume()
     }
     
     //MARK: Private helpers...
@@ -265,5 +187,128 @@ class MiniMixCommunityAPI {
         defaults.setObject(api_token, forKey: "MIX_API_LOGGIN_TOKEN") //TODO: maybe should put these in keychain instead of user defaults
         defaults.setObject(authtoken_expiry, forKey: "MIX_API_LOGIN_EXPIRY") //..
         return true
+    }
+    
+    func addFormData(boundary: String, name: String, theData: AnyObject) -> NSData {
+        let data = NSMutableData()
+        let boundaryString = "--\(boundary)\r\n"
+        let closignString = "\r\n"
+        
+        data.appendData(boundaryString.dataUsingEncoding(NSUTF8StringEncoding)!)
+        data.appendData("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        data.appendData(theData.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        data.appendData(closignString.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        return data
+    }
+    func addFormAttachmentData(boundary: String, name: String, attachmentFilename: String, theData: NSData) -> NSData {
+        let data = NSMutableData()
+        let boundaryString = "--\(boundary)\r\n"
+        let closignString = "\r\n"
+        
+        data.appendData(boundaryString.dataUsingEncoding(NSUTF8StringEncoding)!)
+        data.appendData("Content-Disposition: attachment; name=\"\(name)\"; filename=\"\(attachmentFilename)\"\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        data.appendData("Content-Type: application/octet-stream\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        data.appendData(theData)
+        data.appendData(closignString.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        return data
+    }
+    
+    func mixFileUploadPayload(userEmail: String, song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+        let dataPiecesForBody = NSMutableData()
+        
+        
+        dataPiecesForBody.appendData(addFormData(boundary, name: User.Keys.Email, theData: userEmail))
+        dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "mix", attachmentFilename: "mixfile", theData: AudioCache.mixedSongAsData(song)))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: song.id))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.Name, theData: song.name))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.Genre, theData: song.genre))
+        //song_id
+        //song_name
+        //song_genre
+        
+        
+        
+        dataPiecesForBody.appendData("--\(boundary)--\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        return dataPiecesForBody
+        
+//        
+//        let boundaryString = "--\(boundary)\r\n"
+//        
+//        let closignString = "\r\n"
+//        let boundaryData0 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
+//        //HEAD PIECE
+//        dataPiecesForBody.appendData(boundaryData0)
+//        let formData_userEmail_meta = "Content-Disposition: form-data; name=\"email\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(formData_userEmail_meta!)
+//        let formData_userEmail = userEmail.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(formData_userEmail!)
+//        dataPiecesForBody.appendData(closignString.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+//        dataPiecesForBody.appendData(boundaryString.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+//        //MIX FILE PIECE
+//        //-----------------------------------
+//        //parameter name
+//        let mixFileMetaData = "Content-Disposition: attachment; name=\"mix\"; filename=\"mixfile.m4a\"\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixFileMetaData!)
+//        //content type
+//        let mixfileContentType = "Content-Type: application/octet-stream\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixfileContentType!)
+//        //audio file data
+//        dataPiecesForBody.appendData(AudioCache.mixedSongAsData(song))
+//        //end line
+//        let mixfileDataEnding = "\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixfileDataEnding!)
+//        //boundary
+//        let boundaryData2 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
+//        dataPiecesForBody.appendData(boundaryData2)
+//        //MIX FILE META DATA as Form Data
+//        //---------------------------------------
+//        // ID of the song
+//        let mixFormData_ID_meta = "Content-Disposition: form-data; name=\"song_id\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixFormData_ID_meta!)
+//        let mixFormData_ID = song.id.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixFormData_ID!)
+//        let mix_ID_closing = "\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mix_ID_closing!)
+//        let boundaryData3 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
+//        dataPiecesForBody.appendData(boundaryData3)
+//        // name of the song
+//        let mixFormData_songname_meta = "Content-Disposition: form-data; name=\"song_name\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixFormData_songname_meta!)
+//        let mixFormData_name = song.name.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixFormData_name!)
+//        let mix_name_closing = "\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mix_name_closing!)
+//        let boundaryData4 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
+//        dataPiecesForBody.appendData(boundaryData4)
+//        // genre of the song
+//        let mixFormData_genre_meta = "Content-Disposition: form-data; name=\"genre\"\r\n\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixFormData_genre_meta!)
+//        let mixFormData_genre = song.genre.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mixFormData_genre!)
+//        let mix_genre_closing = "\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+//        dataPiecesForBody.appendData(mix_genre_closing!)
+//        
+//        //let boundaryData5 = boundaryString.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
+//        //dataPiecesForBody.appendData(boundaryData5)
+//        // description of the song
+//        
+//        // self rating of the song
+//        
+//        // song duration in seconds
+//        
+//        // last update (updated_at)
+//        //....END SONG MIX DATA....
+//        
+//        //...TRACKS..........
+//        for track in song.tracks {
+//            //TRACK AUDIO FILE....
+//            print(track.name)
+//            //TRACK META DATA as Form Data..
+//        }
+//        let closingData = "--\(boundary)--\r\n"
+//        let boundaryDataEnd = closingData.dataUsingEncoding(NSUTF8StringEncoding) as NSData!
+//        
+//        dataPiecesForBody.appendData(boundaryDataEnd)
+//        return dataPiecesForBody
     }
 }
