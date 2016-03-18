@@ -11,7 +11,7 @@ import CoreData
 
 class AudioTrack: NSManagedObject {
     struct Keys {
-        static let ID = "id"
+        static let ID = "track_identifier_hash"
         static let Name = "name"
         static let CreatedAt = "created_at"
         static let TrackType = "mix_or_track" //TODO: this may go away..not needed
