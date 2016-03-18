@@ -8,7 +8,9 @@
         <attribute name="lengthSeconds" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
         <attribute name="mixVolume" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
         <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="s3RandomId" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="trackDescription" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="trackFileUrl" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="trackType" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="song" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SongMix" inverseName="tracks" inverseEntity="SongMix" syncable="YES"/>
     </entity>
@@ -18,8 +20,10 @@
         <attribute name="id" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="lastEditDate" optional="YES" attributeType="Date" syncable="YES"/>
         <attribute name="lengthInSeconds" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="mixFileUrl" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="rating" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="s3RandomId" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="songDescription" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="userInitialized" optional="YES" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
         <relationship name="artist" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="songs" inverseEntity="User" syncable="YES"/>
@@ -33,8 +37,8 @@
         <relationship name="songs" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="SongMix" inverseName="artist" inverseEntity="SongMix" syncable="YES"/>
     </entity>
     <elements>
-        <element name="AudioTrack" positionX="-54" positionY="63" width="128" height="195"/>
-        <element name="SongMix" positionX="-63" positionY="-18" width="128" height="210"/>
+        <element name="AudioTrack" positionX="-54" positionY="63" width="128" height="225"/>
+        <element name="SongMix" positionX="-63" positionY="-18" width="128" height="240"/>
         <element name="User" positionX="-54" positionY="72" width="128" height="120"/>
     </elements>
 </model>

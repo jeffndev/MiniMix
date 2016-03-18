@@ -10,39 +10,48 @@ import Foundation
 
 
 class MiniMixCommunityAPI {
+    typealias DataCompletionHander = ((success: Bool, jsonData: [String: AnyObject]?, message: String?, error: NSError?) -> Void)?
+    typealias CompletionHander = ((success: Bool, message: String?, error: NSError?) -> Void)?
+    
     struct ErrorCodes {
         static let NETWORK_ERROR = 400
         static let API_ERROR = 100 //TODO: decide on proper list of error codes to send along, add to this
     }
+    enum HTTPRequestAuthType {
+        case HTTPBasicAuth
+        case HTTPTokenAuth
+    }
+    
+    enum HTTPRequestContentType {
+        case HTTPJsonContent
+        case HTTPMultipartContent
+    }
     let API_AUTH_NAME = "MixPublicUser"
     let API_AUTH_PASSWORD = "7nGU86iI5FCKZJ1Az0R2E7CGZOx2E1A6lJ9i7aD7UPkXDPE3OetAGzHE75T118Ri"
     let API_BASE_URL_SECURE = "http://jnhomesvrnn:3000/api"
+
+    let httpRequestBoundary = "---------------------------14737809831466499882746641449"
     
-    
-    
-    func registerNewUser(email: String, password: String, publicName: String, completion: ((success: Bool, message: String?, error: NSError?) -> Void)?) {
-        //would need the users email
+    //MARK: PUBLIC API interface..
+    func registerNewUser(email: String, password: String, publicName: String, completion: CompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/register_user"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
         request.HTTPMethod = "POST"
-        //print(request.URL)
-        //print(url.port)
         //add headers
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let basicAuthString = "\(API_AUTH_NAME):\(API_AUTH_PASSWORD)"
-        let utf8str = basicAuthString.dataUsingEncoding(NSUTF8StringEncoding)
-        let base64EncodedString = utf8str?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0))
-        request.addValue("Basic \(base64EncodedString!)", forHTTPHeaderField: "Authorization")
+        request.addValue( buildContentTypeHdr(.HTTPJsonContent), forHTTPHeaderField: "Content-Type" )
+        request.addValue( buildAuthorizationHdr(.HTTPBasicAuth), forHTTPHeaderField: "Authorization" )
 
-        //add body
         //TODO: encrypt the password..
         let encrypted_password = password
+        //add body
         request.HTTPBody = "{\"display_name\":\"\(publicName)\",\"email\":\"\(email)\",\"password\":\"\(encrypted_password)\"}".dataUsingEncoding(NSUTF8StringEncoding)
         let session = NSURLSession.sharedSession()
         let task = session.dataTaskWithRequest(request) { data, response, error in
-            //Do stuff...
-            
+            guard error == nil else {
+                completion!(success: false, message: "error recevied from data task", error: error)
+                return
+            }
             guard let data = data else {
                 completion!(success: false, message: "data from JSON request came up empty", error: error)
                 return
@@ -66,19 +75,14 @@ class MiniMixCommunityAPI {
         task.resume()
     }
     
-    func signin(email: String, password: String, publicName: String, completion: ((success: Bool, message: String?, error: NSError?) -> Void)?) {
+    func signin(email: String, password: String, publicName: String, completion: CompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/signin"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
         request.HTTPMethod = "POST"
-        //print(request.URL)
-        //print(url.port)
         //add headers
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")//WARNING: CONTENT TYPE: code repeats, need to pull to function..
-        let basicAuthString = "\(API_AUTH_NAME):\(API_AUTH_PASSWORD)"
-        let utf8str = basicAuthString.dataUsingEncoding(NSUTF8StringEncoding)
-        let base64EncodedString = utf8str?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0))
-        request.addValue("Basic \(base64EncodedString!)", forHTTPHeaderField: "Authorization") //WARNING: AUTHORIZATION HDR: code repeats, need to pull to function..
+        request.addValue( buildContentTypeHdr(.HTTPJsonContent), forHTTPHeaderField: "Content-Type" )
+        request.addValue( buildAuthorizationHdr(.HTTPBasicAuth), forHTTPHeaderField: "Authorization")
         
         //add body
         //TODO: encrypt the password..
@@ -86,8 +90,10 @@ class MiniMixCommunityAPI {
         request.HTTPBody = "{\"email\":\"\(email)\",\"password\":\"\(encrypted_password)\"}".dataUsingEncoding(NSUTF8StringEncoding)
         let session = NSURLSession.sharedSession()
         let task = session.dataTaskWithRequest(request) { data, response, error in
-            //Do stuff...
-            
+            guard error == nil else {
+                completion!(success: false, message: "error recevied from data task", error: error)
+                return
+            }
             guard let data = data else {
                 completion!(success: false, message: "data from JSON request came up empty", error: error)
                 return
@@ -110,42 +116,47 @@ class MiniMixCommunityAPI {
         }
         task.resume()
     }
+    func uploadSong(email: String, password: String, song: SongMix, completion: DataCompletionHander) {
+        uploadSongInfo(email, password: password, song: song) { success, json, message, error in
+            if !success {
+                completion!(success: success, jsonData: json, message: message, error: error)
+                return
+            }
+            self.uploadSongMixFile(email, password: password, song: song) { success, json, message, error in
+                completion!(success: success, jsonData: json, message: message, error: error)
+            }
+        }
     
-    func uploadSong(email: String, password: String, song: SongMix, completion: ((success: Bool, message: String?, error: NSError?) -> Void)?) {
+    }
+    
+    func uploadSongInfo(email: String, password: String, song: SongMix, completion: DataCompletionHander) {
         //first check that the song mix actually happened...
         if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
             AudioHelpers.createSongMixFile(song) { success in
                 if !success {
-                    completion!(success: success, message: "Unable to create track mix file", error: nil)
+                    completion!(success: success, jsonData: nil, message: "Unable to create track mix file", error: nil)
                     return
                 }
             }
         }
-        //TODO: I think you need to separate the Request...
-        //  first: send the song and track info in a more typical format, the json format....
-        // Then, as a post-handler on that, send each audio file..with it's user email, song id and track id
-        //create the multi-part request
-        let boundary = "---------------------------14737809831466499882746641449"
         let builtUrlString = "\(API_BASE_URL_SECURE)/upload_song"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
         request.HTTPMethod = "POST"
         //HTTP HEADERS...
-        let contentTypeHdr = "multipart/form-data; boundary=\(boundary)"
-        request.addValue(contentTypeHdr, forHTTPHeaderField: "Content-Type") //WARNING: CONTENT TYPE: code repeats, need to pull to function..
-        let basicAuthString = "\(API_AUTH_NAME):\(API_AUTH_PASSWORD)"
-        let utf8str = basicAuthString.dataUsingEncoding(NSUTF8StringEncoding)
-        let base64EncodedString = utf8str?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0))
-        request.addValue("Basic \(base64EncodedString!)", forHTTPHeaderField: "Authorization")//WARNING: AUTHORIZATION HDR: code repeats, need to pull to function..
-        //HTTP Body..
-        request.HTTPBody = mixFileUploadPayload(email, song: song, htmlMultipartFormBoundary: boundary)
+        request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
+        request.addValue(buildAuthorizationHdr(.HTTPBasicAuth), forHTTPHeaderField: "Authorization")
+        request.HTTPBody = mixFileMetaDataUploadPayload(email, song: song, htmlMultipartFormBoundary: httpRequestBoundary)
+        
         //GOT REQUEST....
         let session = NSURLSession.sharedSession()
         let songTask = session.dataTaskWithRequest(request) { data, response, error in
-            //Do stuff...
-            
+            guard error == nil else {
+                completion!(success: false, jsonData: nil, message: "error recevied from data task", error: error)
+                return
+            }
             guard let data = data else {
-                completion!(success: false, message: "data from JSON request came up empty", error: error)
+                completion!(success: false, jsonData: nil, message: "data from JSON request came up empty", error: error)
                 return
             }
             var parsedResult: AnyObject!
@@ -153,18 +164,100 @@ class MiniMixCommunityAPI {
                 parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
             } catch let jsonErr as NSError {
                 print("ooops signin failed on http return: \(jsonErr)")
-                completion!(success: false, message: "signup failed to return parseable json", error: nil)
+                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
                 return
             }
+            print("uploadSongMeta returned json:")
             print(parsedResult)
-            guard let _ = parsedResult as? [String: AnyObject] else {
-                completion!(success: false, message: "signup failed to return parseable json", error: nil)
+            guard let parsedJson = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
                 return
             }
-            completion!(success: true, message: nil, error: nil)
+            //TODO: check the json response here for the song info...then do the file upload..
+            completion!(success: true, jsonData: parsedJson,  message: nil, error: nil)
         }
         songTask.resume()
     }
+    
+    func uploadSongMixFile(email: String, password: String, song: SongMix, completion: DataCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/upload_song_file"
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "POST"
+        //HTTP HEADERS...
+        request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
+        request.addValue(buildAuthorizationHdr(.HTTPBasicAuth), forHTTPHeaderField: "Authorization")
+        request.HTTPBody =  mixAudioFilePayload(email, song: song, htmlMultipartFormBoundary: httpRequestBoundary)
+        
+        //GOT REQUEST....
+        let session = NSURLSession.sharedSession()
+        let songFileTask = session.dataTaskWithRequest(request) { data, response, error in
+            guard error == nil else {
+                completion!(success: false, jsonData: nil, message: "error recevied from data task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, jsonData: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch let jsonErr as NSError {
+                completion!(success: false, jsonData: nil, message: "upload_song_file api failed to return parseable json", error: jsonErr)
+                return
+            }
+            print("uploadSongFile returned json:")
+            print(parsedResult)
+            guard let parsedJson = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, jsonData: nil, message: "upload_song_file api failed to return parseable json", error: nil)
+                return
+            }
+            //TODO: check the json response here for the song info...then do the file upload..
+            completion!(success: true, jsonData: parsedJson, message: nil, error: nil)
+        }
+        songFileTask.resume()
+    }
+    func uploadTrackFile(email: String, password: String, track: AudioTrack, completion: DataCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/upload_track_file"
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "POST"
+        //HTTP HEADERS...
+        request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
+        request.addValue(buildAuthorizationHdr(.HTTPBasicAuth), forHTTPHeaderField: "Authorization")
+        request.HTTPBody =  trackAudioFilePayload(email, track: track, htmlMultipartFormBoundary: httpRequestBoundary)
+        
+        //GOT REQUEST....
+        let session = NSURLSession.sharedSession()
+        let trackFileTask = session.dataTaskWithRequest(request) { data, response, error in
+            guard error == nil else {
+                completion!(success: false, jsonData: nil, message: "error recevied from data task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, jsonData: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch let jsonErr as NSError {
+                completion!(success: false, jsonData: nil, message: "upload_track_file api failed to return parseable json", error: jsonErr)
+                return
+            }
+            print("uploadTrackFile returned json:")
+            print(parsedResult)
+            guard let parsedJson = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, jsonData: nil, message: "upload_track_file api failed to return parseable json", error: nil)
+                return
+            }
+            //TODO: check the json response here for the song info...then do the file upload..
+            completion!(success: true, jsonData: parsedJson, message: nil, error: nil)
+        }
+        trackFileTask.resume()
+    }
+
     
     //MARK: Private helpers...
     private func handleLocalAuthTokenData(jsonDictionary: [String: AnyObject]) -> Bool {
@@ -188,8 +281,33 @@ class MiniMixCommunityAPI {
         defaults.setObject(authtoken_expiry, forKey: "MIX_API_LOGIN_EXPIRY") //..
         return true
     }
+    private func buildContentTypeHdr(contentType: HTTPRequestContentType = HTTPRequestContentType.HTTPJsonContent, requestBoundary: String = "") -> String {
+        switch contentType {
+        case .HTTPJsonContent:
+            return "application/json"
+        case .HTTPMultipartContent:
+            return "multipart/form-data; boundary=\(requestBoundary)"
+        }
+    }
+    private func buildAuthorizationHdr(authorizationType: HTTPRequestAuthType) ->String {
+        switch authorizationType {
+        case .HTTPBasicAuth:
+            let basicAuthString = "\(API_AUTH_NAME):\(API_AUTH_PASSWORD)"
+            let utf8str = basicAuthString.dataUsingEncoding(NSUTF8StringEncoding)
+            let base64EncodedString = utf8str?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0))
+            return "Basic \(base64EncodedString!)"
+        case .HTTPTokenAuth:
+            return ""
+//            // Retreieve Auth_Token from Keychain
+//            if let userToken = KeychainAccess.passwordForAccount("Auth_Token", service: "KeyChainService") as String? {
+//                return "Token token=\(userToken)"
+//            } else {
+//                return "Token token="
+//            }
+        }
+    }
     
-    func addFormData(boundary: String, name: String, theData: String) -> NSData {
+    private func addFormData(boundary: String, name: String, theData: String) -> NSData {
         let data = NSMutableData()
         let boundaryString = "--\(boundary)\r\n"
         let closignString = "\r\n"
@@ -200,7 +318,7 @@ class MiniMixCommunityAPI {
         data.appendData(closignString.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
         return data
     }
-    func addFormAttachmentData(boundary: String, name: String, attachmentFilename: String, theData: NSData) -> NSData {
+    private func addFormAttachmentData(boundary: String, name: String, attachmentFilename: String, theData: NSData) -> NSData {
         let data = NSMutableData()
         let boundaryString = "--\(boundary)\r\n"
         let closignString = "\r\n"
@@ -213,12 +331,10 @@ class MiniMixCommunityAPI {
         return data
     }
     
-    func mixFileUploadPayload(userEmail: String, song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+    private func mixFileMetaDataUploadPayload(userEmail: String, song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
         let dataPiecesForBody = NSMutableData()
         
-        
         dataPiecesForBody.appendData(addFormData(boundary, name: User.Keys.Email, theData: userEmail))
-        dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "mix", attachmentFilename: "mixfile", theData: AudioCache.mixedSongAsData(song)))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: song.id))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.Name, theData: song.name))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.Genre, theData: song.genre))
@@ -246,4 +362,25 @@ class MiniMixCommunityAPI {
         dataPiecesForBody.appendData("--\(boundary)--\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
         return dataPiecesForBody
     }
+    
+    private func mixAudioFilePayload(userEmail: String, song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+        let dataPiecesForBody = NSMutableData()
+        
+        dataPiecesForBody.appendData(addFormData(boundary, name: User.Keys.Email, theData: userEmail))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: song.id))
+        dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "mix", attachmentFilename: "mixfile", theData: AudioCache.mixedSongAsData(song)))
+        dataPiecesForBody.appendData("--\(boundary)--\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        return dataPiecesForBody
+    }
+    private func trackAudioFilePayload(userEmail: String, track: AudioTrack, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+        let dataPiecesForBody = NSMutableData()
+        
+        dataPiecesForBody.appendData(addFormData(boundary, name: User.Keys.Email, theData: userEmail))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: track.song!.id))
+        dataPiecesForBody.appendData(addFormData(boundary, name: AudioTrack.Keys.ID, theData: track.id))
+        dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "track", attachmentFilename: "trackfile", theData: AudioCache.trackAudioAsData(track)))
+        dataPiecesForBody.appendData("--\(boundary)--\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
+        return dataPiecesForBody
+    }
+    
 }

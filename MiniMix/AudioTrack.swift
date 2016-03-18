@@ -20,6 +20,8 @@ class AudioTrack: NSManagedObject {
         static let MixVolume = "mix_volume"
         static let HasRecordedFile = "has_audio_file"
         static let TrackDisplayOrder = "display_order"
+        static let TrackFileRemoteUrl = "track_file_url"
+        static let S3RandomId = "s3_random_id"
     }
     //TODO: may not be neded, since the song is not really a Track,
     //   and the actual files are stored separately..
@@ -38,8 +40,14 @@ class AudioTrack: NSManagedObject {
     @NSManaged var mixVolume: NSNumber //Float
     @NSManaged var hasRecordedFile: Bool
     @NSManaged var song: SongMix?
+    @NSManaged var trackFileUrl: String?
+    @NSManaged var s3RandomId: String?
     var isMuted = false //non-persistant
 
+    var wasUploaded: Bool {
+        return trackFileUrl != nil && s3RandomId != nil
+    }
+    
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
         super.init(entity: entity, insertIntoManagedObjectContext: context)
     }
@@ -57,6 +65,8 @@ class AudioTrack: NSManagedObject {
         mixVolume = dictionary[AudioTrack.Keys.MixVolume] as! Float
         hasRecordedFile = dictionary[AudioTrack.Keys.HasRecordedFile] as! Bool
         displayOrder = dictionary[AudioTrack.Keys.TrackDisplayOrder] as! Int32
+        trackFileUrl = dictionary[AudioTrack.Keys.TrackFileRemoteUrl] as? String
+        s3RandomId = dictionary[AudioTrack.Keys.S3RandomId] as? String
     }
     
     init(trackName: String, trackType: String, trackOrder: Int32, insertIntoManagedObjectContext context: NSManagedObjectContext) {
