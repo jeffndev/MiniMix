@@ -80,10 +80,19 @@ class CommunityShareSignInViewController: UIViewController {
             if !success && error != nil {
                 switch error!.code {
                 case MiniMixCommunityAPI.ErrorCodes.API_ERROR:
-                    print("api general error")
+                    var vmessage = message
+                    if vmessage == nil {
+                        vmessage = "api general error, please try again"
+                    }
+                    self.showAlert("API Error", message: vmessage!)
                     return
                 case MiniMixCommunityAPI.ErrorCodes.NETWORK_ERROR:
                     print("general network error")
+                    var vmessage = message
+                    if vmessage == nil {
+                        vmessage = "Network error, please try again"
+                    }
+                    self.showAlert("Network Error", message: vmessage!)
                     return
                 default:
                     break
@@ -100,6 +109,23 @@ class CommunityShareSignInViewController: UIViewController {
             }
         }
     }
+    //MARK: utility functions..
+    func showAlert(title: String?, message: String) {
+        if #available(iOS 8.0, *) {
+            dispatch_async(dispatch_get_main_queue()) {
+                let vc = UIAlertController(title: title, message: message, preferredStyle: .Alert)
+                let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+                vc.addAction(okAction)
+                self.presentViewController(vc, animated: true, completion: nil)
+            }
+        } else {
+            // Fallback on earlier versions
+        }
+        
+        
+        
+    }
+    
 }
 extension CommunityShareSignInViewController: UITextFieldDelegate {
     func textFieldShouldReturn(textField: UITextField) -> Bool {

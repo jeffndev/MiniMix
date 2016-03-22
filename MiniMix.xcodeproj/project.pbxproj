@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		BD01CAFC1C766026000742C7 /* FloatRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD01CAFB1C766026000742C7 /* FloatRatingView.swift */; };
+		BD03A7981CA085D1003B329C /* SearchCommunityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD03A7971CA085D1003B329C /* SearchCommunityViewController.swift */; };
+		BD03A79A1CA0B06B003B329C /* CommunityMixesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD03A7991CA0B06B003B329C /* CommunityMixesListViewController.swift */; };
 		BD3591C11C91E887005B7AC5 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD3591C01C91E887005B7AC5 /* User.swift */; };
 		BD4023431C8668D400F315A2 /* California.otf in Resources */ = {isa = PBXBuildFile; fileRef = BDC7EF1F1C86504B00493749 /* California.otf */; };
 		BD5791671C6A6BFC0054742E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5791661C6A6BFC0054742E /* AppDelegate.swift */; };
@@ -32,6 +34,8 @@
 
 /* Begin PBXFileReference section */
 		BD01CAFB1C766026000742C7 /* FloatRatingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FloatRatingView.swift; sourceTree = "<group>"; };
+		BD03A7971CA085D1003B329C /* SearchCommunityViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SearchCommunityViewController.swift; sourceTree = "<group>"; };
+		BD03A7991CA0B06B003B329C /* CommunityMixesListViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CommunityMixesListViewController.swift; sourceTree = "<group>"; };
 		BD3591C01C91E887005B7AC5 /* User.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		BD5791631C6A6BFC0054742E /* MiniMix.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MiniMix.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BD5791661C6A6BFC0054742E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -132,6 +136,8 @@
 				BD5791781C6A761E0054742E /* SongListViewController.swift */,
 				BD57917A1C6A7B110054742E /* SongInfoViewController.swift */,
 				BDCF834F1C93747100DE54F7 /* CommunityShareSignInViewController.swift */,
+				BD03A7971CA085D1003B329C /* SearchCommunityViewController.swift */,
+				BD03A7991CA0B06B003B329C /* CommunityMixesListViewController.swift */,
 			);
 			name = ViewControllers;
 			sourceTree = "<group>";
@@ -220,6 +226,7 @@
 				BDC7EF211C86591C00493749 /* SongListingTableViewCell.swift in Sources */,
 				BD8A8C271C7512E8004E8220 /* TrackTableViewCell.swift in Sources */,
 				BD8A8C291C7512F8004E8220 /* MasterTableViewCell.swift in Sources */,
+				BD03A7981CA085D1003B329C /* SearchCommunityViewController.swift in Sources */,
 				BDC7EF1C1C86244200493749 /* CoreDataStackManager.swift in Sources */,
 				BD8A8C251C750E49004E8220 /* AudioTrack.swift in Sources */,
 				BD3591C11C91E887005B7AC5 /* User.swift in Sources */,
@@ -233,6 +240,7 @@
 				BD57917D1C6A7B470054742E /* SongMixerViewController.swift in Sources */,
 				BDCF83521C937B7500DE54F7 /* MiniMixCommunityAPI.swift in Sources */,
 				BDCF83501C93747100DE54F7 /* CommunityShareSignInViewController.swift in Sources */,
+				BD03A79A1CA0B06B003B329C /* CommunityMixesListViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

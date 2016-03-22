@@ -287,7 +287,7 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
             presentViewController(signInViewController, animated: true) {
                 if self.currentUser.isRegistered {
                     let api = MiniMixCommunityAPI()
-                    api.uploadSong(userEmail, password: userPwd, song: song) { success, jsonData, message, error in
+                    api.uploadSong(userEmail, password: userPwd, keepPrivate: keepPrivate, song: song) { success, jsonData, message, error in
                         //TODO: probably want to indicate the "uploaded_to_cloud", the song and tracks s3 urls and id's and save locally..
                         if !success || jsonData == nil {
                             dispatch_async(dispatch_get_main_queue()) {
@@ -332,7 +332,7 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
             api.signin(userEmail, password: userPwd, publicName: userMoniker) { success, message, error in
                 if(success) {
                     //let inner_api = MiniMixCommunityAPI()
-                    api.uploadSong(userEmail, password: userPwd, song: song) { success, jsonData, message, error in
+                    api.uploadSong(userEmail, password: userPwd, keepPrivate: keepPrivate, song: song) { success, jsonData, message, error in
                          //WARNING: repeated code...see above
                         if !success || jsonData == nil {
                             dispatch_async(dispatch_get_main_queue()) {
@@ -475,5 +475,6 @@ extension SongListViewController: NSFetchedResultsControllerDelegate {
         cell.songStarsRankLable.text = song.rating == nil ? "" : String(Int(song.rating!))
         cell.song = song
         cell.delegate = self
+        print("cell named: \(song.name) was uploaded url: \(song.wasUploaded)")
     }
 }

@@ -22,6 +22,7 @@ class SongMix: NSManagedObject {
         static let UpdatedAt = "updated_at"
         static let MixFileRemoteUrl = "mix_file_url"
         static let S3RandomId = "s3_random_id"
+        static let PrivacyFlag = "private_flag"
     }
     static let UNCHARACTERIZED_GENRE = "Uncharacterized"
     static let genres = [ "Country", "Classical", "Rock", "Folk", "Jazz", "Alternative", "Metal", UNCHARACTERIZED_GENRE]
@@ -37,6 +38,7 @@ class SongMix: NSManagedObject {
     @NSManaged var lastEditDate: NSDate?
     @NSManaged var s3RandomId: String?
     @NSManaged var mixFileUrl: String?
+    @NSManaged var keepPrivate: Bool
     //relationships
     @NSManaged var tracks: [AudioTrack]
     @NSManaged var artist: User?
@@ -64,6 +66,7 @@ class SongMix: NSManagedObject {
         lastEditDate = dictionary[SongMix.Keys.UpdatedAt] as? NSDate
         mixFileUrl = dictionary[SongMix.Keys.MixFileRemoteUrl] as? String
         s3RandomId = dictionary[SongMix.Keys.S3RandomId] as? String
+        keepPrivate = (dictionary[SongMix.Keys.PrivacyFlag] as? Bool) ?? false
     }
 
     init(songName: String, insertIntoManagedObjectContext context: NSManagedObjectContext){
@@ -75,6 +78,7 @@ class SongMix: NSManagedObject {
         createDate = NSDate()
         genre = SongMix.UNCHARACTERIZED_GENRE
         userInitialized = false
+        keepPrivate = false
         //
         name = songName
     }

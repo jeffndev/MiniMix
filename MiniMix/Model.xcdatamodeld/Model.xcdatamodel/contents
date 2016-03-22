@@ -18,6 +18,7 @@
         <attribute name="createDate" optional="YES" attributeType="Date" syncable="YES"/>
         <attribute name="genre" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="keepPrivate" optional="YES" attributeType="Boolean" syncable="YES"/>
         <attribute name="lastEditDate" optional="YES" attributeType="Date" syncable="YES"/>
         <attribute name="lengthInSeconds" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
         <attribute name="mixFileUrl" optional="YES" attributeType="String" syncable="YES"/>
@@ -38,7 +39,7 @@
     </entity>
     <elements>
         <element name="AudioTrack" positionX="-54" positionY="63" width="128" height="225"/>
-        <element name="SongMix" positionX="-63" positionY="-18" width="128" height="240"/>
+        <element name="SongMix" positionX="-63" positionY="-18" width="128" height="255"/>
         <element name="User" positionX="-54" positionY="72" width="128" height="120"/>
     </elements>
 </model>

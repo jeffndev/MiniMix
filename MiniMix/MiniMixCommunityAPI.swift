@@ -69,8 +69,15 @@ class MiniMixCommunityAPI {
                 completion!(success: false, message: "signup failed to return parseable json", error: nil)
                 return
             }
+            if let apiStatus = jsonDictionary["status"] as? Int {
+                if apiStatus != 200 {
+                    completion!(success: false, message: jsonDictionary["message"] as? String, error: NSError(domain: "api error", code: MiniMixCommunityAPI.ErrorCodes.API_ERROR, userInfo: nil))
+                    return
+                }
+            }
+            
             let tokensOK = self.handleLocalAuthTokenData(jsonDictionary)
-            completion!(success: tokensOK, message: tokensOK ? nil : "Could not identify user credentials from registration", error: nil)
+            completion!(success: tokensOK, message: tokensOK ? nil : "Could not identify user credentials from registration", error: NSError(domain: "Could not identify user credentials from registration", code: 0, userInfo: nil))
         }
         task.resume()
     }
@@ -116,8 +123,8 @@ class MiniMixCommunityAPI {
         }
         task.resume()
     }
-    func uploadSong(email: String, password: String, song: SongMix, completion: DataCompletionHander) {
-        uploadSongInfo(email, password: password, song: song) { success, json, message, error in
+    func uploadSong(email: String, password: String, keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
+        uploadSongInfo(email, password: password, keepPrivate: keepPrivate, song: song) { success, json, message, error in
             if !success {
                 completion!(success: success, jsonData: json, message: message, error: error)
                 return
@@ -129,7 +136,48 @@ class MiniMixCommunityAPI {
     
     }
     
-    func uploadSongInfo(email: String, password: String, song: SongMix, completion: DataCompletionHander) {
+    func searchSongs(email: String, password: String, searchString: String, completion: DataCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/search_songs"
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "POST"
+        //HTTP HEADERS...
+        request.addValue(buildContentTypeHdr(.HTTPJsonContent, requestBoundary: ""), forHTTPHeaderField: "Content-Type")
+        request.addValue(buildAuthorizationHdr(.HTTPBasicAuth), forHTTPHeaderField: "Authorization")
+        request.HTTPBody = "{\"query\":\"\(searchString)\",\"email\":\"\(email)\",\"password\":\"\(password)\"}".dataUsingEncoding(NSUTF8StringEncoding)
+        
+        let session = NSURLSession.sharedSession()
+        let searchTask = session.dataTaskWithRequest(request) { data, response, error in
+            guard error == nil else {
+                completion!(success: false, jsonData: nil, message: "error recevied from data task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, jsonData: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch let jsonErr as NSError {
+                print("ooops signin failed on http return: \(jsonErr)")
+                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
+                return
+            }
+            print("uploadSongMeta returned json:")
+            print(parsedResult)
+            guard let parsedJson = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
+                return
+            }
+            completion!(success: true, jsonData: parsedJson,  message: nil, error: nil)
+        }
+        searchTask.resume()
+
+    }
+    
+    //MARK: song upload PIECES...broken down so not one HUGE http request..
+    func uploadSongInfo(email: String, password: String, keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
         //first check that the song mix actually happened...
         if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
             AudioHelpers.createSongMixFile(song) { success in
@@ -146,7 +194,7 @@ class MiniMixCommunityAPI {
         //HTTP HEADERS...
         request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
         request.addValue(buildAuthorizationHdr(.HTTPBasicAuth), forHTTPHeaderField: "Authorization")
-        request.HTTPBody = mixFileMetaDataUploadPayload(email, song: song, htmlMultipartFormBoundary: httpRequestBoundary)
+        request.HTTPBody = mixFileMetaDataUploadPayload(email, keepPrivate: keepPrivate, song: song, htmlMultipartFormBoundary: httpRequestBoundary)
         
         //GOT REQUEST....
         let session = NSURLSession.sharedSession()
@@ -331,9 +379,10 @@ class MiniMixCommunityAPI {
         return data
     }
     
-    private func mixFileMetaDataUploadPayload(userEmail: String, song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+    private func mixFileMetaDataUploadPayload(userEmail: String, keepPrivate: Bool, song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
         let dataPiecesForBody = NSMutableData()
         
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.PrivacyFlag, theData: "\(keepPrivate)"))
         dataPiecesForBody.appendData(addFormData(boundary, name: User.Keys.Email, theData: userEmail))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: song.id))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.Name, theData: song.name))

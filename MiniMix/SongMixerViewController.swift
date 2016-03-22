@@ -158,6 +158,7 @@ class SongMixerViewController: UITableViewController {
             cell.track = track
             cell.trackNameTextView.text = track.name
             cell.volumeSlider.value = Float(track.mixVolume)
+            //print("track of song: \(track.song!.name) track name: \(track.name) at \(track.trackFileUrl)")
             returnCell = cell
         } else {
             let cell = tableView.dequeueReusableCellWithIdentifier("MasterCell") as! MasterTableViewCell
