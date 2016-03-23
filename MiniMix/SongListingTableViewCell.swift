@@ -13,6 +13,7 @@ class SongListingTableViewCell: UITableViewCell {
     @IBOutlet weak var songTitleLabel: UILabel!
     @IBOutlet weak var songCommentLabel: UITextView!
     @IBOutlet weak var songStarsRankLable: UILabel!
+    @IBOutlet weak var artistName: UILabel!
     
     @IBOutlet weak var stopButton: UIButton!
     @IBOutlet weak var playButton: UIButton!

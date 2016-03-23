@@ -50,6 +50,9 @@ class SongListViewController: UIViewController {
         print("user name: \(currentUser.socialName)")
         if !currentUser.socialName.isEmpty { self.title = "Mini Mix for \(currentUser.socialName)" }
         //SONGS for User
+        if songsFetchedResultsControllerForUser == nil {
+            initializeSongFetchResultsController()
+        }
         do {
             try songsFetchedResultsControllerForUser.performFetch()
         } catch {}
@@ -61,7 +64,9 @@ class SongListViewController: UIViewController {
         super.viewWillAppear(animated)
         
         tableView.reloadData()
-        shareButton.enabled = false
+        if let shareButton = shareButton {
+            shareButton.enabled = false
+        }
     }
     
     //MARK: Fetched Results Controllers And Core Data helper objects
@@ -80,7 +85,9 @@ class SongListViewController: UIViewController {
         return fetchedResultsController
     }()
     
-    lazy var songsFetchedResultsControllerForUser: NSFetchedResultsController = {
+    var songsFetchedResultsControllerForUser: NSFetchedResultsController!
+    
+    func initializeSongFetchResultsController() {
         let fetchRequest = NSFetchRequest(entityName: "SongMix")
         fetchRequest.sortDescriptors = [ NSSortDescriptor(key: "genre", ascending: true), NSSortDescriptor(key: "name", ascending: true) ]
         fetchRequest.predicate = NSPredicate(format: "artist == %@", self.currentUser)
@@ -89,8 +96,8 @@ class SongListViewController: UIViewController {
             sectionNameKeyPath: "genre",
             cacheName: nil)
         
-        return fetchedResultsController
-    }()
+        songsFetchedResultsControllerForUser = fetchedResultsController
+    }
 
     //MARK: Actions.....
     @IBAction func addNewSong() {
@@ -167,10 +174,14 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     }
     //MARK: Delegate protocols
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        shareButton.enabled = true
+        if let shareButton = shareButton {
+            shareButton.enabled = true
+        }
     }
     func tableView(tableView: UITableView, didDeselectRowAtIndexPath indexPath: NSIndexPath) {
-        shareButton.enabled = false
+        if let shareButton = shareButton {
+            shareButton.enabled = false
+        }
     }
     func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
         //EMPTY...handled by the actions below
