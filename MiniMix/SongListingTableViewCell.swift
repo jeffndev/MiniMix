@@ -24,16 +24,23 @@ class SongListingTableViewCell: UITableViewCell {
         guard let song = song, delegate = delegate else {
             return
         }
-        playButton.hidden = true
-        stopButton.hidden = false
-        delegate.playSong(song)
+        setReadyToPlayUIState(false)
+        //playButton.hidden = true
+        //stopButton.hidden = false
+        delegate.playSong(self, song: song)
     }
     @IBAction func stopPlayback(sender: AnyObject) {
         guard let song = song, delegate = delegate else {
             return
         }
-        playButton.hidden = false
-        stopButton.hidden = true
-        delegate.stopSong(song)
+        setReadyToPlayUIState(true)
+        //playButton.hidden = false
+        //stopButton.hidden = true
+        delegate.stopSong(self, song: song)
+    }
+    
+    func setReadyToPlayUIState(ready: Bool) {
+        playButton.hidden = !ready
+        stopButton.hidden = ready
     }
 }

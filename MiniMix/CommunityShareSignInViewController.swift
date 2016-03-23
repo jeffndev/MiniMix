@@ -34,9 +34,7 @@ class CommunityShareSignInViewController: UIViewController {
         if !fetchedUsers.isEmpty {
             currentUser = fetchedUsers.first!
         } else {
-            //initiate the user...
-            currentUser = User(context: sharedContext)
-            CoreDataStackManager.sharedInstance.saveContext()
+            abort()
         }
         //These should be blank, but just in case there's something in there
         emailTextField.text = currentUser.email
@@ -51,6 +49,7 @@ class CommunityShareSignInViewController: UIViewController {
     lazy var fetchUserResultsController: NSFetchedResultsController = {
         let fetchRequest = NSFetchRequest(entityName: "User")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "socialName", ascending: true)]
+        fetchRequest.predicate = NSPredicate(format: "isMe == %@", true)
         let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
             managedObjectContext: self.sharedContext,
             sectionNameKeyPath: nil,
@@ -63,15 +62,15 @@ class CommunityShareSignInViewController: UIViewController {
     //MARK: Action handlers...
     @IBAction func registerAction() {
         guard let email = emailTextField.text where !email.isEmpty else {
-            
+            emailTextField.placeholder = "Please Enter Your Email!"
             return
         }
         guard let password = passwordTextField.text where !password.isEmpty else {
-
+            passwordTextField.placeholder = "Please Enter Your Password!"
             return
         }
         guard let moniker = publicMonikerTextField.text where !moniker.isEmpty else {
-            
+            publicMonikerTextField.placeholder = "Please Enter Your Public Name!"
             return
         }
         let api = MiniMixCommunityAPI()

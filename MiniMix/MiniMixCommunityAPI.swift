@@ -8,9 +8,12 @@
 
 import Foundation
 
-
+//TODO: switch out the non-signin/up apis to not use email/pwd, but auth token instead
+//TODO: incorporate encryption into the passing back and forth of the password information, these need to be encrypted passwords (even over https)
+//TODO: add support for correctly encoding url and query strings...
 class MiniMixCommunityAPI {
     typealias DataCompletionHander = ((success: Bool, jsonData: [String: AnyObject]?, message: String?, error: NSError?) -> Void)?
+    typealias DataArrayCompletionHander = ((success: Bool, jsonData: [[String: AnyObject]]?, message: String?, error: NSError?) -> Void)?
     typealias CompletionHander = ((success: Bool, message: String?, error: NSError?) -> Void)?
     
     struct ErrorCodes {
@@ -135,16 +138,18 @@ class MiniMixCommunityAPI {
         }
     
     }
-    
-    func searchSongs(email: String, password: String, searchString: String, completion: DataCompletionHander) {
+    //TODO: SERIOUSLY needs to not use password..change to token based, please.
+    func searchSongs(email: String, searchString: String, completion: DataArrayCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/search_songs"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
+        //NOTE: a good argument is made that search is appropriate for POST rather then GET..also practically, search strings could be too long for http query string
+        // http://stackoverflow.com/questions/4203686/how-can-i-deal-with-http-get-query-string-length-limitations-and-still-want-to-b
         request.HTTPMethod = "POST"
         //HTTP HEADERS...
         request.addValue(buildContentTypeHdr(.HTTPJsonContent, requestBoundary: ""), forHTTPHeaderField: "Content-Type")
         request.addValue(buildAuthorizationHdr(.HTTPBasicAuth), forHTTPHeaderField: "Authorization")
-        request.HTTPBody = "{\"query\":\"\(searchString)\",\"email\":\"\(email)\",\"password\":\"\(password)\"}".dataUsingEncoding(NSUTF8StringEncoding)
+        request.HTTPBody = "{\"query\":\"\(searchString)\",\"email\":\"\(email)\"}".dataUsingEncoding(NSUTF8StringEncoding)
         
         let session = NSURLSession.sharedSession()
         let searchTask = session.dataTaskWithRequest(request) { data, response, error in
@@ -161,13 +166,13 @@ class MiniMixCommunityAPI {
                 parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
             } catch let jsonErr as NSError {
                 print("ooops signin failed on http return: \(jsonErr)")
-                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
+                completion!(success: false, jsonData: nil, message: "search failed to return parseable json", error: nil)
                 return
             }
             print("uploadSongMeta returned json:")
             print(parsedResult)
-            guard let parsedJson = parsedResult as? [String: AnyObject] else {
-                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
+            guard let parsedJson = parsedResult as? [[String: AnyObject]] else {
+                completion!(success: false, jsonData: nil, message: "search failed to return parseable json", error: nil)
                 return
             }
             completion!(success: true, jsonData: parsedJson,  message: nil, error: nil)
@@ -175,6 +180,12 @@ class MiniMixCommunityAPI {
         searchTask.resume()
 
     }
+    
+//    func downloadCommnuitySongFile(email: String, songInfo:, completion: DataArrayCompletionHander) {
+//        //NOTE: this is not necessary, we already have the info to create and save a SongMix object,
+//        //      they should just play the song from the remote mix_file_url
+//        //     if, in future, I add a feature to truly DOWNLOAD the file, it will just go directly to the AWS url, not need for the api call
+//    }
     
     //MARK: song upload PIECES...broken down so not one HUGE http request..
     func uploadSongInfo(email: String, password: String, keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
@@ -432,4 +443,22 @@ class MiniMixCommunityAPI {
         return dataPiecesForBody
     }
     
+    private func escapedParameters(parameters: [String : AnyObject]) -> String {
+        var urlVars = [String]()
+        
+        for (key, value) in parameters {
+            // make sure that it is a string value
+            let stringValue = "\(value)"
+            // Escape it
+            let escapedValue = stringValue.stringByAddingPercentEncodingWithAllowedCharacters(NSCharacterSet.URLQueryAllowedCharacterSet())
+            // Append it
+            if let unwrappedEscapedValue = escapedValue {
+                urlVars += [key + "=" + "\(unwrappedEscapedValue)"]
+            } else {
+                print("Warning: trouble excaping string \"\(stringValue)\"")
+            }
+        }
+        return (!urlVars.isEmpty ? "?" : "") + urlVars.joinWithSeparator("&")
+    }
+
 }

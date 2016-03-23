@@ -11,8 +11,8 @@ import AVFoundation
 import CoreData
 
 protocol SongPlaybackDelegate {
-    func playSong(song: SongMix)
-    func stopSong(song: SongMix)
+    func playSong(cell: SongListingTableViewCell, song: SongMix)
+    func stopSong(cell: SongListingTableViewCell, song: SongMix)
 }
 
 class SongListViewController: UIViewController {
@@ -23,6 +23,7 @@ class SongListViewController: UIViewController {
     
     var currentUser: User!
     var players = [AVAudioPlayer]()
+    var currentPlayingCellRef: SongListingTableViewCell!
     
     //MARK: Lifecycle overrides...
     override func viewDidLoad() {
@@ -40,12 +41,14 @@ class SongListViewController: UIViewController {
         }
         if !fetchedUsers.isEmpty {
             currentUser = fetchedUsers.first!
+            assert(currentUser.isMe)
         } else {
             //initiate the user...
-            currentUser = User(context: sharedContext)
+            currentUser = User(thisIsMe: true, context: sharedContext)
             CoreDataStackManager.sharedInstance.saveContext()
         }
         print("user name: \(currentUser.socialName)")
+        if !currentUser.socialName.isEmpty { self.title = "Mini Mix for \(currentUser.socialName)" }
         //SONGS for User
         do {
             try songsFetchedResultsControllerForUser.performFetch()
@@ -68,6 +71,7 @@ class SongListViewController: UIViewController {
     lazy var userFetchedResultsController: NSFetchedResultsController = {
         let fetchRequest = NSFetchRequest(entityName: "User")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "socialName", ascending: true)]
+        fetchRequest.predicate = NSPredicate(format: "isMe == %@", true)
         let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
             managedObjectContext: self.sharedContext,
             sectionNameKeyPath: nil,
@@ -136,43 +140,6 @@ class SongListViewController: UIViewController {
         }
     }
     
-//    func createSongMixFile(song: SongMix, postHandler: (success: Bool) -> Void) {
-//        let composition = AVMutableComposition()
-//        var inputMixParms = [AVAudioMixInputParameters]()
-//        for track in song.tracks {
-//            let trackUrl = AudioCache.trackPath(track, parentSong: song)
-//            let audioAsset = AVURLAsset(URL: trackUrl)
-//            let audioCompositionTrack = composition.addMutableTrackWithMediaType(AVMediaTypeAudio, preferredTrackID: kCMPersistentTrackID_Invalid)
-//            do {
-//                try audioCompositionTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, audioAsset.duration), ofTrack: audioAsset.tracksWithMediaType(AVMediaTypeAudio).first!, atTime: kCMTimeZero)
-//            }catch {
-//                postHandler(success: false)
-//                return
-//            }
-//            let mixParm = AVMutableAudioMixInputParameters(track: audioCompositionTrack)
-//            inputMixParms.append(mixParm)
-//        }
-//        //EXPORT
-//        let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
-//        let mixUrl = AudioCache.mixedSongPath(song)
-//        do {
-//            try NSFileManager.defaultManager().removeItemAtPath(mixUrl.path!)
-//        } catch {
-//            
-//        }
-//        if let export = export {
-//            let mixParms = AVMutableAudioMix()
-//            mixParms.inputParameters = inputMixParms
-//            export.audioMix = mixParms
-//            export.outputFileType = AVFileTypeAppleM4A
-//            export.outputURL = mixUrl
-//            export.exportAsynchronouslyWithCompletionHandler {
-//                postHandler(success: true)
-//                print("EXPORTED..try to play it now")
-//            }
-//        }
-//
-//    }
 }
 //MARK: table view data soure and delegate protocols
 extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
@@ -274,6 +241,7 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
         }
     }
     func cloudUploadActivity(song: SongMix, keepPrivate: Bool) {
+        //TODO: this function is a bear...need to clean it up...
         guard let currentUser = currentUser else {
             print("nil current user...")
             return
@@ -386,19 +354,17 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
         songInfoViewController.song = song
         presentViewController(songInfoViewController, animated: true, completion: nil)
     }
-    
-//    func getSelectedSong(forIndexPath indexPath: NSIndexPath) -> SongMix {
-//        let songs = songsFetchedResultsControllerForUser.fetchedObjects as! [SongMix]
-//        let songsInGenre = songs.filter { $0.genre == SongMix.genres[indexPath.section]}
-//        return songsInGenre[indexPath.row]
-//    }
 }
 //MARK: SongPlayback Delegate Protocols...
 extension SongListViewController: SongPlaybackDelegate {
-    func playSong(song: SongMix) {
-        playMixNaiveImplementation(song)
+    func playSong(cell: SongListingTableViewCell, song: SongMix) {
+        if currentPlayingCellRef == nil {
+            currentPlayingCellRef = cell
+            playMixNaiveImplementation(song)
+        }
     }
-    func stopSong(song: SongMix) {
+    func stopSong(cell: SongListingTableViewCell, song: SongMix) {
+        currentPlayingCellRef = nil
         let _ = players.map() { $0.stop() }
     }
     
@@ -410,16 +376,31 @@ extension SongListViewController: SongPlaybackDelegate {
                 path = AudioCache.trackPath(track, parentSong: song)
                 let player = try AVAudioPlayer(contentsOfURL: path)
                 player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
+                player.delegate = self
                 players.append(player)
             } catch let error as NSError {
                 print("could not create audio player for audio file at \(path.path!)\n  \(error.localizedDescription)")
             }
         }
         let session = AVAudioSession.sharedInstance()
-        try! session.setCategory(AVAudioSessionCategoryPlayback)
+        do {
+            try session.setCategory(AVAudioSessionCategoryPlayback)
+        } catch let sessionErr as NSError {
+            print("\(sessionErr)")
+        }
         for player in players {
             player.play()
         }
+    }
+}
+//MARK: AVAudioPlayerDelegate
+extension SongListViewController: AVAudioPlayerDelegate {
+    func audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully flag: Bool) {
+        //have to signal to the cell that the
+        if let cell = currentPlayingCellRef {
+            cell.setReadyToPlayUIState(true)
+        }
+        currentPlayingCellRef = nil
     }
 }
 //MARK: FetchedResults Delegate Protocols...

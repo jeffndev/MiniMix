@@ -12,7 +12,7 @@ class User: NSManagedObject {
     struct Keys {
         static let Email = "email"
         static let Password = "password"
-        static let SocialName = "name_social"
+        static let SocialName = "display_name"
         static let IsRegistered = "registered_flag"
     }
     
@@ -20,6 +20,7 @@ class User: NSManagedObject {
     @NSManaged var servicePassword: String
     @NSManaged var socialName: String
     @NSManaged var isRegistered: Bool
+    @NSManaged var isMe: Bool
     @NSManaged var songs: [SongMix]
     
     override init(entity: NSEntityDescription, insertIntoManagedObjectContext context: NSManagedObjectContext?) {
@@ -36,7 +37,7 @@ class User: NSManagedObject {
         isRegistered = dictionary[User.Keys.IsRegistered] as! Bool
     }
     
-    init(context: NSManagedObjectContext) {
+    init(thisIsMe: Bool, context: NSManagedObjectContext) {
         let entity = NSEntityDescription.entityForName("User", inManagedObjectContext: context)!
         super.init(entity: entity, insertIntoManagedObjectContext: context)
         
@@ -44,5 +45,18 @@ class User: NSManagedObject {
         servicePassword = ""
         socialName = ""
         isRegistered = false
+        isMe = true
     }
+    
+    init(thisIsMe: Bool, userEmail: String, userPwd: String, displayName: String, context: NSManagedObjectContext) {
+        let entity = NSEntityDescription.entityForName("User", inManagedObjectContext: context)!
+        super.init(entity: entity, insertIntoManagedObjectContext: context)
+        
+        email = userEmail
+        servicePassword = userPwd
+        socialName = displayName
+        isRegistered = true
+        isMe = thisIsMe
+    }
+
 }

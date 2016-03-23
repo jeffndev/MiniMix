@@ -39,11 +39,10 @@ class CommunityMixesListViewController: UIViewController {
         if !fetchedUsers.isEmpty {
             currentUser = fetchedUsers.first!
         } else {
-            //initiate the user...
-            currentUser = User(context: sharedContext)
-            CoreDataStackManager.sharedInstance.saveContext()
+            abort()
         }
         print("user name: \(currentUser.socialName)")
+        if !currentUser.socialName.isEmpty { self.title = "Mini Mix for \(currentUser.socialName)" }
         //SONGS for User
         do {
             try songsFetchedResultsControllerForUser.performFetch()
@@ -57,6 +56,11 @@ class CommunityMixesListViewController: UIViewController {
         
         tableView.reloadData()
         searchButton.enabled = true
+        
+        //TODO: if user is not registered, force them to do so at this juncture..
+        if !currentUser.isRegistered || currentUser.servicePassword.isEmpty || currentUser.email.isEmpty {
+            
+        }
     }
     
     //MARK: Fetched Results Controllers And Core Data helper objects
@@ -66,6 +70,7 @@ class CommunityMixesListViewController: UIViewController {
     lazy var userFetchedResultsController: NSFetchedResultsController = {
         let fetchRequest = NSFetchRequest(entityName: "User")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "socialName", ascending: true)]
+        fetchRequest.predicate = NSPredicate(format: "isMe == %@", true)
         let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
             managedObjectContext: self.sharedContext,
             sectionNameKeyPath: nil,
@@ -109,10 +114,10 @@ extension CommunityMixesListViewController: NSFetchedResultsControllerDelegate {
 
 //MARK: SongPlayback Delegate Protocols...
 extension CommunityMixesListViewController: SongPlaybackDelegate {
-    func playSong(song: SongMix) {
+    func playSong(cell: SongListingTableViewCell, song: SongMix) {
         playMixNaiveImplementation(song)
     }
-    func stopSong(song: SongMix) {
+    func stopSong(cell: SongListingTableViewCell, song: SongMix) {
         let _ = players.map() { $0.stop() }
     }
     

@@ -57,9 +57,14 @@ class SongMix: NSManagedObject {
         
         id = dictionary[SongMix.Keys.ID] as! String
         name = dictionary[SongMix.Keys.Name] as! String
-        createDate = dictionary[SongMix.Keys.CreatedAt] as! NSDate
+        //Date from string...
+        let strCreateDate = dictionary[SongMix.Keys.CreatedAt] as! String
+        let dateFormater = NSDateFormatter()
+        dateFormater.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        createDate = dateFormater.dateFromString(strCreateDate)!
+        
         genre = dictionary[SongMix.Keys.Genre] as! String
-        userInitialized = dictionary[SongMix.Keys.UserDidSetSongInfo] as! Bool
+        userInitialized = true //dictionary[SongMix.Keys.UserDidSetSongInfo] as! Bool
         songDescription = dictionary[SongMix.Keys.SongDescription] as? String
         lengthInSeconds = dictionary[SongMix.Keys.SongDurationSeconds] as? Double
         rating = dictionary[SongMix.Keys.SelfRating] as? Float
@@ -68,7 +73,25 @@ class SongMix: NSManagedObject {
         s3RandomId = dictionary[SongMix.Keys.S3RandomId] as? String
         keepPrivate = (dictionary[SongMix.Keys.PrivacyFlag] as? Bool) ?? false
     }
-
+    
+    init(songInfo: SongMixLite, context: NSManagedObjectContext) {
+        let entity = NSEntityDescription.entityForName("SongMix", inManagedObjectContext: context)!
+        super.init(entity: entity, insertIntoManagedObjectContext: context)
+        
+        id = songInfo.id
+        name = songInfo.name
+        createDate = songInfo.createDate
+        genre = songInfo.genre
+        userInitialized = true
+        songDescription = songInfo.songDescription
+        lengthInSeconds = songInfo.lengthInSeconds
+        rating = songInfo.rating
+        lastEditDate = NSDate()
+        mixFileUrl = songInfo.mixFileUrl
+        s3RandomId = ""
+        keepPrivate = songInfo.keepPrivate
+    }
+    
     init(songName: String, insertIntoManagedObjectContext context: NSManagedObjectContext){
         let entity = NSEntityDescription.entityForName("SongMix", inManagedObjectContext: context)!
         super.init(entity: entity, insertIntoManagedObjectContext: context)
@@ -82,32 +105,6 @@ class SongMix: NSManagedObject {
         //
         name = songName
     }
-    
-    
-//    init(songName: String) {
-//        name = songName
-//        createDate = NSDate()
-//        id = NSUUID().UUIDString
-//        genre = "Uncharacterized"
-//        userInitialized = false
-//        tracks = [AudioTrack]()
-//    }
-    
-    // TODO: this will be avaible once you CoreData-ize this, use it to manage the audio file deletions..
-//    override func prepareForDeletion() {
-//        FlickrProvider.Caches.imageCache.deleteImageFile(withIdentifier: photoId)
-//    }
-    
-    
-//    func deleteTracks() {
-//        //TODO: fold this into the proper place after all the CoreData and Cache infrastructure is set up, will want a cascade delete on the relationship
-//        // so that'w what probably takes care of this...put the prepareForDeletion on the AudioTrack object to delete that file
-//        
-//        for track in tracks {
-//            try! NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: self).path!)
-//        }
-//        tracks.removeAll()
-//    }
     
     override func prepareForDeletion() {
         for track in tracks {
