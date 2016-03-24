@@ -19,7 +19,7 @@ struct SongMixLite {
     var lengthInSeconds: NSNumber? //Double?
     var rating: NSNumber? //Float?
     //var lastEditDate: NSDate?
-    //var s3RandomId: String?
+    var s3RandomId: String?
     var mixFileUrl: String?
     var keepPrivate: Bool
     var userDisplayName: String
@@ -38,7 +38,7 @@ struct SongMixLite {
         let strCreateDate = dictionary[SongMix.Keys.CreatedAt] as! String
         let dateFormater = NSDateFormatter()
         dateFormater.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-        createDate = dateFormater.dateFromString(strCreateDate)!
+        createDate = dateFormater.dateFromString(strCreateDate) ?? NSDate()
         
         genre = dictionary[SongMix.Keys.Genre] as! String
         userInitialized = true //dictionary[SongMix.Keys.UserDidSetSongInfo] as! Bool
@@ -47,7 +47,7 @@ struct SongMixLite {
         rating = dictionary[SongMix.Keys.SelfRating] as? Float
         //lastEditDate = dictionary[SongMix.Keys.UpdatedAt] as? NSDate
         mixFileUrl = dictionary[SongMix.Keys.MixFileRemoteUrl] as? String
-        //s3RandomId = dictionary[SongMix.Keys.S3RandomId] as? String
+        s3RandomId = dictionary[SongMix.Keys.S3RandomId] as? String
         keepPrivate = (dictionary[SongMix.Keys.PrivacyFlag] as? Bool) ?? false
         userDisplayName = dictionary[User.Keys.SocialName] as! String
     }

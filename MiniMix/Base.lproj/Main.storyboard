@@ -425,13 +425,13 @@
                                                         <action selector="playMix:" destination="QTu-1j-fdu" eventType="touchUpInside" id="Bbh-ho-5ci"/>
                                                     </connections>
                                                 </button>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" misplaced="YES" text="My Great Song" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Bg3-FI-Sud">
-                                                    <rect key="frame" x="92" y="30" width="442" height="32"/>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" text="My Great Song" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Bg3-FI-Sud">
+                                                    <rect key="frame" x="92" y="25" width="442" height="32"/>
                                                     <fontDescription key="fontDescription" name="California" family="California" pointSize="32"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Stars" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Vnr-Yi-GJ9">
-                                                    <rect key="frame" x="544" y="36" width="40" height="21"/>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Stars" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Vnr-Yi-GJ9">
+                                                    <rect key="frame" x="544" y="31" width="40" height="21"/>
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="42" id="vOx-db-Ac4"/>
                                                     </constraints>
@@ -444,8 +444,8 @@
                                                         </mask>
                                                     </variation>
                                                 </label>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="6" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BDG-lG-4k6">
-                                                    <rect key="frame" x="558" y="57" width="13" height="23"/>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="6" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BDG-lG-4k6">
+                                                    <rect key="frame" x="558" y="52" width="13" height="23"/>
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="42" id="xN4-Rp-4pq"/>
                                                     </constraints>
@@ -1122,12 +1122,6 @@
                                                         </mask>
                                                     </variation>
                                                 </label>
-                                                <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" editable="NO" text="A luxurious blend of beats and vocal harmonies" translatesAutoresizingMaskIntoConstraints="NO" id="wNp-a0-zz9">
-                                                    <rect key="frame" x="92" y="70" width="442" height="40"/>
-                                                    <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                                    <fontDescription key="fontDescription" name="California" family="California" pointSize="17"/>
-                                                    <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
-                                                </textView>
                                                 <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gop-DX-6XA">
                                                     <rect key="frame" x="31" y="45" width="30" height="30"/>
                                                     <constraints>
@@ -1139,6 +1133,12 @@
                                                         <action selector="stopPlayback:" destination="Mi0-wo-RIq" eventType="touchUpInside" id="B7S-3n-BpZ"/>
                                                     </connections>
                                                 </button>
+                                                <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" editable="NO" text="A luxurious blend of beats and vocal harmonies" translatesAutoresizingMaskIntoConstraints="NO" id="wNp-a0-zz9">
+                                                    <rect key="frame" x="92" y="70" width="442" height="40"/>
+                                                    <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                                    <fontDescription key="fontDescription" name="California" family="California" pointSize="17"/>
+                                                    <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                                                </textView>
                                             </subviews>
                                             <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                             <constraints>

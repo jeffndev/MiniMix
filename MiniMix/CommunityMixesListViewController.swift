@@ -69,21 +69,35 @@ class CommunityMixesListViewController: SongListViewController {
 
 //MARK: SongPlayback Delegate Protocols...
 extension CommunityMixesListViewController {
-    override func playMixNaiveImplementation(song: SongMix) {
+    override func playMixNaiveImplementation(song: SongMix) -> Bool{
         players.removeAll()
         if let songUrl = song.mixFileUrl {
             do {
-                let songData = NSData(contentsOfURL: NSURL(string: songUrl)!)
-                let player = try AVAudioPlayer(data: songData!)
+                let songDataTry = NSData(contentsOfURL: NSURL(string: songUrl)!)
+                guard let songData = songDataTry else {
+                    dispatch_async(dispatch_get_main_queue()) {
+                        self.showAlertMsg("Song Play", msg: "Could not load song data from the network")
+                    }
+                    return false
+                }
+                let player = try AVAudioPlayer(data: songData)
+                player.delegate = self
                 let session = AVAudioSession.sharedInstance()
                 try session.setCategory(AVAudioSessionCategoryPlayback)
                 players.append(player)
                 for player in players {
+                    player.prepareToPlay()
+                }
+                for player in players {
                     player.play()
                 }
+                return true
             } catch let playerErr as NSError {
                 print("couldn't create player to play the mix: \(playerErr)")
+                return false
             }
+        } else {
+            return false
         }
     }
 }

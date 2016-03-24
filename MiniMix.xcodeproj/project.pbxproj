@@ -10,6 +10,10 @@
 		BD01CAFC1C766026000742C7 /* FloatRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD01CAFB1C766026000742C7 /* FloatRatingView.swift */; };
 		BD03A7981CA085D1003B329C /* SearchCommunityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD03A7971CA085D1003B329C /* SearchCommunityViewController.swift */; };
 		BD03A79A1CA0B06B003B329C /* CommunityMixesListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD03A7991CA0B06B003B329C /* CommunityMixesListViewController.swift */; };
+		BD28EAFF1CA46F5F00AB0339 /* AESCrypt.m in Sources */ = {isa = PBXBuildFile; fileRef = BD28EAF81CA46F5F00AB0339 /* AESCrypt.m */; };
+		BD28EB001CA46F5F00AB0339 /* NSData+Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = BD28EAFA1CA46F5F00AB0339 /* NSData+Base64.m */; };
+		BD28EB011CA46F5F00AB0339 /* NSData+CommonCrypto.m in Sources */ = {isa = PBXBuildFile; fileRef = BD28EAFC1CA46F5F00AB0339 /* NSData+CommonCrypto.m */; };
+		BD28EB021CA46F5F00AB0339 /* NSString+Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = BD28EAFE1CA46F5F00AB0339 /* NSString+Base64.m */; };
 		BD3591C11C91E887005B7AC5 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD3591C01C91E887005B7AC5 /* User.swift */; };
 		BD4023431C8668D400F315A2 /* California.otf in Resources */ = {isa = PBXBuildFile; fileRef = BDC7EF1F1C86504B00493749 /* California.otf */; };
 		BD5791671C6A6BFC0054742E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5791661C6A6BFC0054742E /* AppDelegate.swift */; };
@@ -38,6 +42,15 @@
 		BD01CAFB1C766026000742C7 /* FloatRatingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FloatRatingView.swift; sourceTree = "<group>"; };
 		BD03A7971CA085D1003B329C /* SearchCommunityViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SearchCommunityViewController.swift; sourceTree = "<group>"; };
 		BD03A7991CA0B06B003B329C /* CommunityMixesListViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CommunityMixesListViewController.swift; sourceTree = "<group>"; };
+		BD28EAF71CA46F5F00AB0339 /* AESCrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AESCrypt.h; sourceTree = "<group>"; };
+		BD28EAF81CA46F5F00AB0339 /* AESCrypt.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AESCrypt.m; sourceTree = "<group>"; };
+		BD28EAF91CA46F5F00AB0339 /* NSData+Base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+Base64.h"; sourceTree = "<group>"; };
+		BD28EAFA1CA46F5F00AB0339 /* NSData+Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+Base64.m"; sourceTree = "<group>"; };
+		BD28EAFB1CA46F5F00AB0339 /* NSData+CommonCrypto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+CommonCrypto.h"; sourceTree = "<group>"; };
+		BD28EAFC1CA46F5F00AB0339 /* NSData+CommonCrypto.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+CommonCrypto.m"; sourceTree = "<group>"; };
+		BD28EAFD1CA46F5F00AB0339 /* NSString+Base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Base64.h"; sourceTree = "<group>"; };
+		BD28EAFE1CA46F5F00AB0339 /* NSString+Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Base64.m"; sourceTree = "<group>"; };
+		BD28EB031CA470C100AB0339 /* MiniMix-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MiniMix-Bridging-Header.h"; sourceTree = "<group>"; };
 		BD3591C01C91E887005B7AC5 /* User.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		BD5791631C6A6BFC0054742E /* MiniMix.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MiniMix.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BD5791661C6A6BFC0054742E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -75,6 +88,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		BD28EAF61CA46F5F00AB0339 /* AESCrypt */ = {
+			isa = PBXGroup;
+			children = (
+				BD28EAF71CA46F5F00AB0339 /* AESCrypt.h */,
+				BD28EAF81CA46F5F00AB0339 /* AESCrypt.m */,
+				BD28EAF91CA46F5F00AB0339 /* NSData+Base64.h */,
+				BD28EAFA1CA46F5F00AB0339 /* NSData+Base64.m */,
+				BD28EAFB1CA46F5F00AB0339 /* NSData+CommonCrypto.h */,
+				BD28EAFC1CA46F5F00AB0339 /* NSData+CommonCrypto.m */,
+				BD28EAFD1CA46F5F00AB0339 /* NSString+Base64.h */,
+				BD28EAFE1CA46F5F00AB0339 /* NSString+Base64.m */,
+			);
+			path = AESCrypt;
+			sourceTree = "<group>";
+		};
+		BD28EB041CA4753C00AB0339 /* SupportingFiles */ = {
+			isa = PBXGroup;
+			children = (
+				BD28EB031CA470C100AB0339 /* MiniMix-Bridging-Header.h */,
+			);
+			name = SupportingFiles;
+			sourceTree = "<group>";
+		};
 		BD57915A1C6A6BFC0054742E = {
 			isa = PBXGroup;
 			children = (
@@ -94,6 +130,7 @@
 		BD5791651C6A6BFC0054742E /* MiniMix */ = {
 			isa = PBXGroup;
 			children = (
+				BD28EAF61CA46F5F00AB0339 /* AESCrypt */,
 				BDC7EF1F1C86504B00493749 /* California.otf */,
 				BD57916A1C6A6BFC0054742E /* Main.storyboard */,
 				BD57916D1C6A6BFC0054742E /* Assets.xcassets */,
@@ -107,6 +144,7 @@
 				BDC7EF1A1C8623EE00493749 /* ViewControllers */,
 				BD01CAFB1C766026000742C7 /* FloatRatingView.swift */,
 				BD8F89991C99CD3C009B766E /* AudioHelpers.swift */,
+				BD28EB041CA4753C00AB0339 /* SupportingFiles */,
 			);
 			path = MiniMix;
 			sourceTree = "<group>";
@@ -188,6 +226,7 @@
 				TargetAttributes = {
 					BD5791621C6A6BFC0054742E = {
 						CreatedOnToolsVersion = 7.2.1;
+						DevelopmentTeam = 7K52CQ73P4;
 					};
 				};
 			};
@@ -236,15 +275,19 @@
 				BDC7EF1C1C86244200493749 /* CoreDataStackManager.swift in Sources */,
 				BD8A8C251C750E49004E8220 /* AudioTrack.swift in Sources */,
 				BD3591C11C91E887005B7AC5 /* User.swift in Sources */,
+				BD28EB011CA46F5F00AB0339 /* NSData+CommonCrypto.m in Sources */,
+				BD28EB021CA46F5F00AB0339 /* NSString+Base64.m in Sources */,
 				BD57917B1C6A7B110054742E /* SongInfoViewController.swift in Sources */,
 				BDC7EF1E1C8624E100493749 /* AudioCache.swift in Sources */,
 				BD6CF43B1CA1D3FA00594EBF /* SearchSongsCell.swift in Sources */,
 				BD8A8C2B1C75357C004E8220 /* SongMix.swift in Sources */,
 				BD01CAFC1C766026000742C7 /* FloatRatingView.swift in Sources */,
 				BD8F899A1C99CD3C009B766E /* AudioHelpers.swift in Sources */,
+				BD28EAFF1CA46F5F00AB0339 /* AESCrypt.m in Sources */,
 				BD5791791C6A761E0054742E /* SongListViewController.swift in Sources */,
 				BD7C69661C90E964005825A2 /* Model.xcdatamodeld in Sources */,
 				BD57917D1C6A7B470054742E /* SongMixerViewController.swift in Sources */,
+				BD28EB001CA46F5F00AB0339 /* NSData+Base64.m in Sources */,
 				BDCF83521C937B7500DE54F7 /* MiniMixCommunityAPI.swift in Sources */,
 				BDCF83501C93747100DE54F7 /* CommunityShareSignInViewController.swift in Sources */,
 				BD03A79A1CA0B06B003B329C /* CommunityMixesListViewController.swift in Sources */,
@@ -361,11 +404,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = MiniMix/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.jefenew.MiniMix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "MiniMix-Bridging-Header.h";
 			};
 			name = Debug;
 		};
@@ -373,11 +420,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = MiniMix/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.jefenew.MiniMix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "MiniMix-Bridging-Header.h";
 			};
 			name = Release;
 		};

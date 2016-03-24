@@ -70,6 +70,18 @@ class SearchCommunityViewController: UIViewController {
         
         return fetchedResultsController
     }()
+    
+    func showAlertMsg(title: String?, msg: String) {
+        if #available(iOS 8.0, *) {
+            let vc = UIAlertController(title: title, message: msg, preferredStyle: .Alert)
+            let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+            vc.addAction(okAction)
+            presentViewController(vc, animated: true, completion: nil)
+        } else {
+            // Fallback on earlier versions
+        }
+    }
+
 }
 
 
@@ -101,9 +113,28 @@ extension SearchCommunityViewController: UISearchBarDelegate {
             return
         }
         let api = MiniMixCommunityAPI()
-        api.searchSongs(currentUser!.email, searchString: searchText) { success, json, message, error in
-            //TODO: add the usual protections and error handling...
-            self.currentResults = json!.map() {
+        api.searchSongs(searchText) { success, json, message, error in
+            //search is a non-critical feature, no error display unless specific message received from server API
+            guard error == nil else {
+                print("search error: \(error!.localizedDescription)")
+                return
+            }
+            guard success else {
+                if let msg = message {
+                    print(msg)
+                    dispatch_async(dispatch_get_main_queue()) {
+                        self.showAlertMsg("Search Failure", msg: msg)
+                    }
+                }
+                return
+            }
+            guard let jsonResponse = json else {
+                print("json response from search not valid")
+                return
+            }
+            print(jsonResponse)
+            
+            self.currentResults = jsonResponse.map() {
                 SongMixLite(jsonDictionary: $0)
             }
             print(self.currentResults.count)
@@ -111,6 +142,9 @@ extension SearchCommunityViewController: UISearchBarDelegate {
                 self.tableView.reloadData()
             }
         }
+    }
+    func searchBarSearchButtonClicked(searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
     }
 }
 extension SearchCommunityViewController: SongSearchPlaybackDelegate {

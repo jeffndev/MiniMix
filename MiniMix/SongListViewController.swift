@@ -48,7 +48,7 @@ class SongListViewController: UIViewController {
             CoreDataStackManager.sharedInstance.saveContext()
         }
         print("user name: \(currentUser.socialName)")
-        if !currentUser.socialName.isEmpty { self.title = "Mini Mix for \(currentUser.socialName)" }
+        //if !currentUser.socialName.isEmpty { self.title = "Mini Mix for \(currentUser.socialName)" }
         //SONGS for User
         if songsFetchedResultsControllerForUser == nil {
             initializeSongFetchResultsController()
@@ -371,7 +371,7 @@ extension SongListViewController: SongPlaybackDelegate {
     func playSong(cell: SongListingTableViewCell, song: SongMix) {
         if currentPlayingCellRef == nil {
             currentPlayingCellRef = cell
-            playMixNaiveImplementation(song)
+            cell.setReadyToPlayUIState(!playMixNaiveImplementation(song))
         }
     }
     func stopSong(cell: SongListingTableViewCell, song: SongMix) {
@@ -379,7 +379,7 @@ extension SongListViewController: SongPlaybackDelegate {
         let _ = players.map() { $0.stop() }
     }
     
-    func playMixNaiveImplementation(song: SongMix) {
+    func playMixNaiveImplementation(song: SongMix) ->Bool {
         players.removeAll()
         var path: NSURL
         for track in song.tracks {
@@ -391,6 +391,7 @@ extension SongListViewController: SongPlaybackDelegate {
                 players.append(player)
             } catch let error as NSError {
                 print("could not create audio player for audio file at \(path.path!)\n  \(error.localizedDescription)")
+                return false
             }
         }
         let session = AVAudioSession.sharedInstance()
@@ -398,10 +399,15 @@ extension SongListViewController: SongPlaybackDelegate {
             try session.setCategory(AVAudioSessionCategoryPlayback)
         } catch let sessionErr as NSError {
             print("\(sessionErr)")
+            return false
+        }
+        for player in players {
+            player.prepareToPlay()
         }
         for player in players {
             player.play()
         }
+        return true
     }
 }
 //MARK: AVAudioPlayerDelegate
