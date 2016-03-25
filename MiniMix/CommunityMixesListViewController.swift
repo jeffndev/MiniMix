@@ -76,7 +76,7 @@ extension CommunityMixesListViewController {
                 let songDataTry = NSData(contentsOfURL: NSURL(string: songUrl)!)
                 guard let songData = songDataTry else {
                     dispatch_async(dispatch_get_main_queue()) {
-                        self.showAlertMsg("Song Play", msg: "Could not load song data from the network")
+                        self.showAlertMsg("Song Play", msg: "Could not load song data from the network", posthandler: nil)
                     }
                     return false
                 }

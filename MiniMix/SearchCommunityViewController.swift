@@ -113,36 +113,45 @@ extension SearchCommunityViewController: UISearchBarDelegate {
             return
         }
         let api = MiniMixCommunityAPI()
-        api.searchSongs(searchText) { success, json, message, error in
-            //search is a non-critical feature, no error display unless specific message received from server API
-            guard error == nil else {
-                print("search error: \(error!.localizedDescription)")
-                return
-            }
+        api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
             guard success else {
-                if let msg = message {
-                    print(msg)
-                    dispatch_async(dispatch_get_main_queue()) {
-                        self.showAlertMsg("Search Failure", msg: msg)
-                    }
+                let msg = message ?? "Could not authenticate with the server"
+                self.showAlertMsg("Search Failure", msg: msg)
+                return
+            }
+            api.searchSongs(searchText) { success, json, message, error in
+                //search is a non-critical feature, no error display unless specific message received from server API
+                guard error == nil else {
+                    print("search error: \(error!.localizedDescription)")
+                    return
                 }
-                return
-            }
-            guard let jsonResponse = json else {
-                print("json response from search not valid")
-                return
-            }
-            print(jsonResponse)
-            
-            self.currentResults = jsonResponse.map() {
-                SongMixLite(jsonDictionary: $0)
-            }
-            print(self.currentResults.count)
-            dispatch_async(dispatch_get_main_queue()) {
-                self.tableView.reloadData()
+                guard success else {
+                    if let msg = message {
+                        print(msg)
+                        dispatch_async(dispatch_get_main_queue()) {
+                            self.showAlertMsg("Search Failure", msg: msg)
+                        }
+                    }
+                    return
+                }
+                guard let jsonResponse = json else {
+                    print("json response from search not valid")
+                    return
+                }
+                print(jsonResponse)
+                
+                self.currentResults = jsonResponse.map() {
+                    SongMixLite(jsonDictionary: $0)
+                }
+                print(self.currentResults.count)
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.tableView.reloadData()
+                }
             }
         }
     }
+    
+    
     func searchBarSearchButtonClicked(searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
     }

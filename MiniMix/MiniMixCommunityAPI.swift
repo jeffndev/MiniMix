@@ -8,11 +8,9 @@
 
 import Foundation
 
-//TODO: switch out the non-signin/up apis to not use email/pwd, but auth token instead
-//TODO: incorporate encryption into the passing back and forth of the password information, these need to be encrypted passwords (even over https)
-//TODO: add support for correctly encoding url and query strings...
 class MiniMixCommunityAPI {
     typealias DataCompletionHander = ((success: Bool, jsonData: [String: AnyObject]?, message: String?, error: NSError?) -> Void)?
+    typealias BoolCompletionHander = ((success: Bool, istrue: Bool?, message: String?, error: NSError?) -> Void)?
     typealias DataArrayCompletionHander = ((success: Bool, jsonData: [[String: AnyObject]]?, message: String?, error: NSError?) -> Void)?
     typealias CompletionHander = ((success: Bool, message: String?, error: NSError?) -> Void)?
     
@@ -34,8 +32,9 @@ class MiniMixCommunityAPI {
     let API_BASE_URL_SECURE = "http://jnhomesvrnn:3000/api"
 
     let httpRequestBoundary = "---------------------------14737809831466499882746641449"
+    let JSON_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
     
-    private let DEFAULTS_KEY_LOGGED_IN_FLAG = "MIX_API_LOGGED_IN_FLAG"
+    //private let DEFAULTS_KEY_LOGGED_IN_FLAG = "MIX_API_LOGGED_IN_FLAG"
     private let DEFAULTS_KEY_API_TOKEN = "MIX_API_LOGGIN_TOKEN" //TODO: maybe should put these in keychain instead of user defaults
     private let DEFAULTS_KEY_API_EXPIRY = "MIX_API_LOGIN_EXPIRY"
     
@@ -84,13 +83,86 @@ class MiniMixCommunityAPI {
                 completion!(success: false, message: "User was not succesfully registered with MiniMix, please try again later", error: nil)
                 return
             }
-            
+            guard self.handleLocalAuthTokenData(jsonDictionary) else {
+                completion!(success: false, message: "Could not find authorization token after signup", error: nil)
+                return
+            }
             completion!(success: true, message: nil, error: nil)
         }
         task.resume()
     }
     
-    func signin(email: String, password: String, publicName: String, completion: CompletionHander) {
+    func verifyToken(completion: BoolCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/verify_token"
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "GET"
+        //add headers
+        //request.addValue( buildContentTypeHdr(.HTTPJsonContent), forHTTPHeaderField: "Content-Type" )
+        request.addValue( buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
+        
+        //add body
+        //let encrypted_password = AESCrypt.encrypt(password, password: API_AUTH_PASSWORD)
+        //request.HTTPBody = "{\"email\":\"\(email)\",\"password\":\"\(encrypted_password)\"}".dataUsingEncoding(NSUTF8StringEncoding)
+        let session = NSURLSession.sharedSession()
+        let task = session.dataTaskWithRequest(request) { data, response, error in
+          
+            //if no user identified, complete with failure.
+            
+            //just need to find the authtoken_expiry in the json then compare to now (also, send it off to save locally too...)
+            guard error == nil else {
+                completion!(success: false, istrue: nil, message: "error recevied from token verify task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, istrue: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch let jsonErr as NSError {
+                print("verify_token http return: \(jsonErr)")
+                completion!(success: false, istrue: nil, message: "verify_token failed to return parseable json", error: nil)
+                return
+            }
+            print(parsedResult)
+            guard let jsonDictionary = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, istrue: nil, message: "verify_token failed to return parseable json", error: nil)
+                return
+            }
+            guard let verifyInfo = jsonDictionary["verify_info"] as? [String: AnyObject] else {
+                completion!(success: false, istrue: nil, message: "verify_token failed to return parseable json", error: nil)
+                return
+            }
+            guard let valid = verifyInfo["valid"] as? Bool else {
+                completion!(success: false, istrue: nil, message: "verify_token failed to return parseable json", error: nil)
+                return
+            }
+            completion!(success: true, istrue: valid, message: nil, error: nil)
+        }
+        task.resume()
+    }
+    
+    func verifyAuthTokenOrSignin(email: String, password: String, completion: CompletionHander) {
+        let defaults = NSUserDefaults.standardUserDefaults()
+        let token: String? = defaults.objectForKey(DEFAULTS_KEY_API_TOKEN) as? String
+        let expiry: NSDate?  = defaults.objectForKey(DEFAULTS_KEY_API_EXPIRY) as? NSDate
+        
+        if let token = token, let expiry = expiry where !token.isEmpty && NSDate().compare(expiry) == .OrderedAscending {
+            verifyToken() { success, istrue, message, error in
+                guard success, let valid = istrue where valid else {
+                    self.signin(email, password: password, completion: completion)
+                    return
+                }
+                completion!(success: true, message: nil, error: nil)
+            }
+        } else {
+            signin(email, password: password, completion: completion)
+        }
+    }
+    
+    func signin(email: String, password: String, completion: CompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/signin"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -130,6 +202,7 @@ class MiniMixCommunityAPI {
         }
         task.resume()
     }
+    
     func uploadSong(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
         uploadSongInfo(keepPrivate, song: song) { success, json, message, error in
             if !success {
@@ -140,9 +213,8 @@ class MiniMixCommunityAPI {
                 completion!(success: success, jsonData: json, message: message, error: error)
             }
         }
-    
     }
-    //TODO: SERIOUSLY needs to not use password..change to token based, please.
+    
     func searchSongs(searchString: String, completion: DataArrayCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/search_songs"
         let url = NSURL(string: builtUrlString)!
@@ -322,7 +394,7 @@ class MiniMixCommunityAPI {
                 completion!(success: false, jsonData: nil, message: "upload_track_file api failed to return parseable json", error: nil)
                 return
             }
-            //TODO: check the json response here for the song info...then do the file upload..
+            //TODO: check the json response here for the track file info...
             completion!(success: true, jsonData: parsedJson, message: nil, error: nil)
         }
         trackFileTask.resume()
@@ -340,13 +412,13 @@ class MiniMixCommunityAPI {
             return false
         }
         let dateFormatter = NSDateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        dateFormatter.dateFormat =  JSON_DATE_FORMAT_STRING // "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         guard let authtoken_expiry = dateFormatter.dateFromString(str_authtoken_expiry) else {
             print("could not interpret expiry date")
             return false
         }
         let defaults = NSUserDefaults.standardUserDefaults()
-        defaults.setBool(true, forKey: DEFAULTS_KEY_LOGGED_IN_FLAG)
+        //defaults.setBool(true, forKey: DEFAULTS_KEY_LOGGED_IN_FLAG) //this seems not necessary..just use existance of token and expiry..
         defaults.setObject(api_token, forKey: DEFAULTS_KEY_API_TOKEN) //TODO: maybe should put these in keychain instead of user defaults
         defaults.setObject(authtoken_expiry, forKey: DEFAULTS_KEY_API_EXPIRY) //..
         return true
@@ -367,12 +439,12 @@ class MiniMixCommunityAPI {
             let base64EncodedString = utf8str?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0))
             return "Basic \(base64EncodedString!)"
         case .HTTPTokenAuth:
-            // Retreieve Auth_Token from Keychain
+            // TODO: Retreieve Auth_Token from Keychain
             let userToken = getUserAuthToken()  //KeychainAccess.passwordForAccount("Auth_Token", service: "KeyChainService") as String? {
             return "Token token=\(userToken)"
         }
     }
-    private func getUserAuthToken() ->String {
+    private func getUserAuthToken() -> String {
         let defaults = NSUserDefaults.standardUserDefaults()
         
         let existingToken =  (defaults.objectForKey(DEFAULTS_KEY_API_TOKEN) as? String) ?? ""

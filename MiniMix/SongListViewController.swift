@@ -214,144 +214,196 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
         sharedContext.deleteObject(song)
         CoreDataStackManager.sharedInstance.saveContext()
     }
+    
+    func doSignUp() {
+        let signInViewController = storyboard?.instantiateViewControllerWithIdentifier("CommunitySignInViewController") as! CommunityShareSignInViewController
+        presentViewController(signInViewController, animated: true, completion: nil)
+    }
+    
     func toCloudAction(indexPath: NSIndexPath) {
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
-        print("Sharing to cloud: \(song.name)")
-        //FLOW:  after user chooses an action (private or community), attempt to login to the API, get a session.
-        //   unless...if not registered and all info is blank, then immediately jump to the sign-in modal
-        //   when the modal exits, push the share song action (whichever it is) back on the stack..activiy indicator..success..
-        //   (only show something if there is a problem, just silently dismiss the alerts and actitivy indicator after done)
-        //
-        //
-        if #available(iOS 8.0, *) {
-            let alert = UIAlertController(title: "Share to Cloud", message: nil, preferredStyle: .ActionSheet) //maybe .Alert style better??
-            let shareWithCommunity = UIAlertAction(title: "Share with Community", style: .Default) { action in
-                print("community share")
-                self.cloudUploadActivity(song, keepPrivate: false)
+        
+        guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
+            self.showAlertMsg("User Registration", msg: "Please register first for Cloud access to Mini Mix") {
+                self.doSignUp()
             }
-            alert.addAction(shareWithCommunity)
-            let savePrivate = UIAlertAction(title: "Save as Private", style: .Default) { action in
-                print("private shareing")
-                self.cloudUploadActivity(song, keepPrivate: true)
+            return
+        }
+        let api = MiniMixCommunityAPI()
+        api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
+            guard success else {
+                let msg = message ?? "Could not authenticate with the server"
+                self.showAlertMsg("Upload Failure", msg: msg, posthandler: nil)
+                return
             }
-            alert.addAction(savePrivate)
-            
-            presentViewController(alert, animated: true, completion: nil)
-        } else {
-            // Fallback on earlier versions
+            if #available(iOS 8.0, *) {
+                let alert = UIAlertController(title: "Share to Cloud", message: nil, preferredStyle: .ActionSheet) //maybe .Alert style better??
+                let shareWithCommunity = UIAlertAction(title: "Share with Community", style: .Default) { action in
+                    self.cloudUploadTasks(song, keepPrivate: false)
+                }
+                alert.addAction(shareWithCommunity)
+                let savePrivate = UIAlertAction(title: "Save as Private", style: .Default) { action in
+                    self.cloudUploadTasks(song, keepPrivate: true)
+                }
+                alert.addAction(savePrivate)
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.presentViewController(alert, animated: true, completion: nil)
+                }
+            } else {
+                //TODO: Fallback on earlier versions
+            }
         }
     }
-    func showAlertMsg(title: String?, msg: String) {
+        
+    func showAlertMsg(title: String?, msg: String, posthandler: (() -> Void)?) {
         if #available(iOS 8.0, *) {
             let vc = UIAlertController(title: title, message: msg, preferredStyle: .Alert)
             let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
             vc.addAction(okAction)
-            presentViewController(vc, animated: true, completion: nil)
+            presentViewController(vc, animated: true, completion: posthandler)
         } else {
-            // Fallback on earlier versions
+            //TODO: Fallback on earlier versions
         }
     }
-    func cloudUploadActivity(song: SongMix, keepPrivate: Bool) {
-        //TODO: this function is a bear...need to clean it up...
-        guard let currentUser = currentUser else {
-            print("nil current user...")
-            return
-        }
-        let userEmail = currentUser.email
-        let userPwd = currentUser.servicePassword
-        let userMoniker = currentUser.socialName
-        
-        if !currentUser.isRegistered || currentUser.servicePassword.isEmpty || currentUser.email.isEmpty {
-            let signInViewController = storyboard?.instantiateViewControllerWithIdentifier("CommunitySignInViewController") as! CommunityShareSignInViewController
-            presentViewController(signInViewController, animated: true) {
-                if self.currentUser.isRegistered {
-                    let api = MiniMixCommunityAPI()
-                    api.uploadSong(userEmail, password: userPwd, keepPrivate: keepPrivate, song: song) { success, jsonData, message, error in
-                        //TODO: probably want to indicate the "uploaded_to_cloud", the song and tracks s3 urls and id's and save locally..
-                        if !success || jsonData == nil {
-                            dispatch_async(dispatch_get_main_queue()) {
-                                self.showAlertMsg("Cloud Upload", msg: "Song failed to upload, please try again")
-                            }
-                            return
-                        }
+    
+    func cloudUploadTasks(song: SongMix, keepPrivate: Bool) {
+        let api = MiniMixCommunityAPI()
+        api.uploadSong(keepPrivate, song: song) { success, jsonData, message, error in
+            guard success && jsonData != nil else {
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.showAlertMsg("Cloud Upload", msg: "Song failed to upload, please try again", posthandler: nil)
+                }
+                return
+            }
+            //HANDLE SONG UPLOAD JSON RESPONSE.........
+            dispatch_async(dispatch_get_main_queue()) {
+                guard let remoteUrl = jsonData![SongMix.Keys.MixFileRemoteUrl] as? String, let s3Id = jsonData![SongMix.Keys.S3RandomId] as? String else {
+                    self.showAlertMsg("Cloud Upload", msg: "Song failed to upload properly, no links returned, please try again", posthandler: nil)
+                    return
+                }
+                song.s3RandomId = s3Id
+                song.mixFileUrl = remoteUrl
+                CoreDataStackManager.sharedInstance.saveContext()
+            }
+            for track in song.tracks where track.hasRecordedFile {
+                //if !track.hasRecordedFile { continue }
+                api.uploadTrackFile(track) { success, jsonData, message, error in
+                    if success && jsonData != nil{
                         dispatch_async(dispatch_get_main_queue()) {
-                            if let remoteUrl = jsonData![SongMix.Keys.MixFileRemoteUrl] as? String {
-                                song.mixFileUrl = remoteUrl
-                            }
-                            if let s3Id = jsonData![SongMix.Keys.S3RandomId] as? String {
-                                song.s3RandomId = s3Id
-                            }
-                            CoreDataStackManager.sharedInstance.saveContext()
-                        }
-                        for track in song.tracks {
-                            if !track.hasRecordedFile { continue }//WARNING: repeated code...see below
-                            api.uploadTrackFile(userEmail, password: userPwd, track: track) { success, jsonData, message, error in
-                                if success && jsonData != nil{
-                                    //TODO: save the track url and s3 id to the db..
-                                    dispatch_async(dispatch_get_main_queue()) {
-                                        if let remoteTrackUrl = jsonData![AudioTrack.Keys.TrackFileRemoteUrl] as? String {
-                                            track.trackFileUrl = remoteTrackUrl
-                                        }
-                                        if let s3Id = jsonData![AudioTrack.Keys.S3RandomId] as? String {
-                                            track.s3RandomId = s3Id
-                                        }
-                                        CoreDataStackManager.sharedInstance.saveContext()
-                                    }
-                                }
-
+                            if let remoteTrackUrl = jsonData![AudioTrack.Keys.TrackFileRemoteUrl] as? String, let s3Id = jsonData![AudioTrack.Keys.S3RandomId] as? String {
+                                track.trackFileUrl = remoteTrackUrl
+                                track.s3RandomId = s3Id
+                                CoreDataStackManager.sharedInstance.saveContext()
                             }
                         }
                     }
-                } else {
-                    //TODO: fail somehow..gotta let user know
                 }
             }
-        } else {
-            let api = MiniMixCommunityAPI()
-            api.signin(userEmail, password: userPwd, publicName: userMoniker) { success, message, error in
-                if(success) {
-                    //let inner_api = MiniMixCommunityAPI()
-                    api.uploadSong(userEmail, password: userPwd, keepPrivate: keepPrivate, song: song) { success, jsonData, message, error in
-                         //WARNING: repeated code...see above
-                        if !success || jsonData == nil {
-                            dispatch_async(dispatch_get_main_queue()) {
-                                self.showAlertMsg("Cloud Upload", msg: "Song failed to upload, please try again")
-                            }
-                            return
-                        }
-                        dispatch_async(dispatch_get_main_queue()) {
-                            if let remoteUrl = jsonData![SongMix.Keys.MixFileRemoteUrl] as? String {
-                                song.mixFileUrl = remoteUrl
-                            }
-                            if let s3Id = jsonData![SongMix.Keys.S3RandomId] as? String {
-                                song.s3RandomId = s3Id
-                            }
-                            CoreDataStackManager.sharedInstance.saveContext()
-                        }
-                        for track in song.tracks {
-                            if !track.hasRecordedFile { continue }
-                            api.uploadTrackFile(userEmail, password: userPwd, track: track) { success, jsonData, message, error in
-                                if success && jsonData != nil{
-                                    //TODO: save the track url and s3 id to the db..
-                                    dispatch_async(dispatch_get_main_queue()) {
-                                        if let remoteTrackUrl = jsonData![AudioTrack.Keys.TrackFileRemoteUrl] as? String {
-                                            track.trackFileUrl = remoteTrackUrl
-                                        }
-                                        if let s3Id = jsonData![AudioTrack.Keys.S3RandomId] as? String {
-                                            track.s3RandomId = s3Id
-                                        }
-                                        CoreDataStackManager.sharedInstance.saveContext()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    //have to figure out which kinds of errors...if need to signup again or something would need the signin modal, otherwise, just tell user sorry, try again
-                }
-            }
+            //END HANDLE SONG UPLOAD JSON RESPONSE.......
         }
     }
+    
+//    func cloudUploadActivity(song: SongMix, keepPrivate: Bool) {
+//        //TODO: this function is a bear...need to clean it up...
+//        guard let currentUser = currentUser else {
+//            print("nil current user...")
+//            return
+//        }
+//        let userEmail = currentUser.email
+//        let userPwd = currentUser.servicePassword
+//        let userMoniker = currentUser.socialName
+//        
+//        if !currentUser.isRegistered || currentUser.servicePassword.isEmpty || currentUser.email.isEmpty {
+//            let signInViewController = storyboard?.instantiateViewControllerWithIdentifier("CommunitySignInViewController") as! CommunityShareSignInViewController
+//            presentViewController(signInViewController, animated: true) {
+//                if self.currentUser.isRegistered {
+//                    let api = MiniMixCommunityAPI()
+//                    api.uploadSong(userEmail, password: userPwd, keepPrivate: keepPrivate, song: song) { success, jsonData, message, error in
+//                        //TODO: probably want to indicate the "uploaded_to_cloud", the song and tracks s3 urls and id's and save locally..
+//                        if !success || jsonData == nil {
+//                            dispatch_async(dispatch_get_main_queue()) {
+//                                self.showAlertMsg("Cloud Upload", msg: "Song failed to upload, please try again")
+//                            }
+//                            return
+//                        }
+//                        dispatch_async(dispatch_get_main_queue()) {
+//                            if let remoteUrl = jsonData![SongMix.Keys.MixFileRemoteUrl] as? String {
+//                                song.mixFileUrl = remoteUrl
+//                            }
+//                            if let s3Id = jsonData![SongMix.Keys.S3RandomId] as? String {
+//                                song.s3RandomId = s3Id
+//                            }
+//                            CoreDataStackManager.sharedInstance.saveContext()
+//                        }
+//                        for track in song.tracks {
+//                            if !track.hasRecordedFile { continue }//WARNING: repeated code...see below
+//                            api.uploadTrackFile(userEmail, password: userPwd, track: track) { success, jsonData, message, error in
+//                                if success && jsonData != nil{
+//                                    //TODO: save the track url and s3 id to the db..
+//                                    dispatch_async(dispatch_get_main_queue()) {
+//                                        if let remoteTrackUrl = jsonData![AudioTrack.Keys.TrackFileRemoteUrl] as? String {
+//                                            track.trackFileUrl = remoteTrackUrl
+//                                        }
+//                                        if let s3Id = jsonData![AudioTrack.Keys.S3RandomId] as? String {
+//                                            track.s3RandomId = s3Id
+//                                        }
+//                                        CoreDataStackManager.sharedInstance.saveContext()
+//                                    }
+//                                }
+//
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    //TODO: fail somehow..gotta let user know
+//                }
+//            }
+//        } else {
+//            let api = MiniMixCommunityAPI()
+//            api.signin(userEmail, password: userPwd, publicName: userMoniker) { success, message, error in
+//                if(success) {
+//                    //let inner_api = MiniMixCommunityAPI()
+//                    api.uploadSong(userEmail, password: userPwd, keepPrivate: keepPrivate, song: song) { success, jsonData, message, error in
+//                         //WARNING: repeated code...see above
+//                        if !success || jsonData == nil {
+//                            dispatch_async(dispatch_get_main_queue()) {
+//                                self.showAlertMsg("Cloud Upload", msg: "Song failed to upload, please try again")
+//                            }
+//                            return
+//                        }
+//                        dispatch_async(dispatch_get_main_queue()) {
+//                            if let remoteUrl = jsonData![SongMix.Keys.MixFileRemoteUrl] as? String {
+//                                song.mixFileUrl = remoteUrl
+//                            }
+//                            if let s3Id = jsonData![SongMix.Keys.S3RandomId] as? String {
+//                                song.s3RandomId = s3Id
+//                            }
+//                            CoreDataStackManager.sharedInstance.saveContext()
+//                        }
+//                        for track in song.tracks {
+//                            if !track.hasRecordedFile { continue }
+//                            api.uploadTrackFile(userEmail, password: userPwd, track: track) { success, jsonData, message, error in
+//                                if success && jsonData != nil{
+//                                    //TODO: save the track url and s3 id to the db..
+//                                    dispatch_async(dispatch_get_main_queue()) {
+//                                        if let remoteTrackUrl = jsonData![AudioTrack.Keys.TrackFileRemoteUrl] as? String {
+//                                            track.trackFileUrl = remoteTrackUrl
+//                                        }
+//                                        if let s3Id = jsonData![AudioTrack.Keys.S3RandomId] as? String {
+//                                            track.s3RandomId = s3Id
+//                                        }
+//                                        CoreDataStackManager.sharedInstance.saveContext()
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    //have to figure out which kinds of errors...if need to signup again or something would need the signin modal, otherwise, just tell user sorry, try again
+//                }
+//            }
+//        }
+//    }
     
     func remixAction(indexPath: NSIndexPath) {
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
