@@ -24,11 +24,6 @@ class CommunityMixesListViewController: SongListViewController {
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
         searchButton.enabled = true
-        
-        //TODO: if user is not registered, force them to do so at this juncture..
-        if !currentUser.isRegistered || currentUser.servicePassword.isEmpty || currentUser.email.isEmpty {
-            
-        }
     }
     
     //MARK: Fetched Results Controllers And Core Data helper objects
@@ -46,6 +41,10 @@ class CommunityMixesListViewController: SongListViewController {
 
     //MARK: Actions..
     @IBAction func doSongSearch() {
+        guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
+            doSignUp()
+            return
+        }
         let searchViewController = storyboard?.instantiateViewControllerWithIdentifier("SearchCommunityViewController") as! SearchCommunityViewController
         presentViewController(searchViewController, animated: true, completion: nil)
     }

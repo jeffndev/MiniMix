@@ -60,6 +60,10 @@ class CommunityShareSignInViewController: UIViewController {
     
     
     //MARK: Action handlers...
+    @IBAction func cancelAction() {
+        dismissViewControllerAnimated(true, completion: nil)
+    }
+    
     @IBAction func registerAction() {
         guard let email = emailTextField.text where !email.isEmpty else {
             emailTextField.placeholder = "Please Enter Your Email!"

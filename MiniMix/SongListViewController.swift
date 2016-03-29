@@ -224,9 +224,7 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
         
         guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
-            self.showAlertMsg("User Registration", msg: "Please register first for Cloud access to Mini Mix") {
-                self.doSignUp()
-            }
+            doSignUp()
             return
         }
         let api = MiniMixCommunityAPI()

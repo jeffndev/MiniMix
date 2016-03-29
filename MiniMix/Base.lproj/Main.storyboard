@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="9532" systemVersion="15D21" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="KdD-yi-V6c">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="10116" systemVersion="15E65" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="KdD-yi-V6c">
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9530"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
         <capability name="Navigation items with more than one left or right bar item" minToolsVersion="7.0"/>
     </dependencies>
@@ -875,13 +875,36 @@
                                     <action selector="registerAction" destination="z3g-k0-kVf" eventType="touchUpInside" id="zx1-Uz-Y18"/>
                                 </connections>
                             </button>
+                            <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="JBY-DA-PS1">
+                                <rect key="frame" x="0.0" y="20" width="600" height="44"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="44" id="wMe-W5-gYX"/>
+                                </constraints>
+                                <items>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="IeC-F4-949"/>
+                                    <barButtonItem systemItem="stop" id="YAc-dv-bYM">
+                                        <connections>
+                                            <action selector="cancelAction" destination="z3g-k0-kVf" id="ODD-Dd-om8"/>
+                                        </connections>
+                                    </barButtonItem>
+                                </items>
+                            </toolbar>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Register with MiniMIx" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8eG-qv-qMf">
+                                <rect key="frame" x="219" y="31" width="163" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
-                            <constraint firstItem="Nni-6A-4YZ" firstAttribute="top" secondItem="oCy-4k-hHc" secondAttribute="bottom" constant="50" id="Abv-lK-S46"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="JBY-DA-PS1" secondAttribute="trailing" constant="-20" id="5sS-JB-EQm"/>
+                            <constraint firstItem="JBY-DA-PS1" firstAttribute="leading" secondItem="Arb-B5-Kf4" secondAttribute="leadingMargin" constant="-20" id="FO5-r5-DpQ"/>
+                            <constraint firstItem="Nni-6A-4YZ" firstAttribute="top" secondItem="JBY-DA-PS1" secondAttribute="bottom" constant="6" id="MSM-Eu-Fbx"/>
                             <constraint firstItem="Ylt-Rj-TaM" firstAttribute="leading" secondItem="Nni-6A-4YZ" secondAttribute="leading" id="Qf2-UY-JKu"/>
                             <constraint firstItem="Ylt-Rj-TaM" firstAttribute="top" secondItem="Nni-6A-4YZ" secondAttribute="bottom" constant="28" id="SGF-pZ-s7O"/>
                             <constraint firstItem="vs1-l0-ta5" firstAttribute="trailing" secondItem="08e-4H-taC" secondAttribute="trailing" id="UMS-IF-aW6"/>
+                            <constraint firstItem="8eG-qv-qMf" firstAttribute="top" secondItem="oCy-4k-hHc" secondAttribute="bottom" constant="11" id="dGi-nP-3V2"/>
                             <constraint firstItem="XEp-9h-wNX" firstAttribute="top" secondItem="vs1-l0-ta5" secondAttribute="bottom" constant="56" id="e2I-fA-Rh2"/>
                             <constraint firstItem="Ylt-Rj-TaM" firstAttribute="trailing" secondItem="Nni-6A-4YZ" secondAttribute="trailing" id="hEE-qo-5pz"/>
                             <constraint firstItem="vs1-l0-ta5" firstAttribute="centerX" secondItem="Arb-B5-Kf4" secondAttribute="centerX" id="jaf-hR-HKp"/>
@@ -889,8 +912,10 @@
                             <constraint firstAttribute="trailingMargin" secondItem="Nni-6A-4YZ" secondAttribute="trailing" constant="20" id="ofJ-LG-eUf"/>
                             <constraint firstItem="08e-4H-taC" firstAttribute="top" secondItem="Ylt-Rj-TaM" secondAttribute="bottom" constant="28" id="p4U-xG-7qy"/>
                             <constraint firstItem="08e-4H-taC" firstAttribute="leading" secondItem="Ylt-Rj-TaM" secondAttribute="leading" id="phH-g8-BQr"/>
+                            <constraint firstItem="8eG-qv-qMf" firstAttribute="centerX" secondItem="Arb-B5-Kf4" secondAttribute="centerX" id="rRf-zX-LLR"/>
                             <constraint firstItem="vs1-l0-ta5" firstAttribute="leading" secondItem="08e-4H-taC" secondAttribute="leading" id="smt-06-jGw"/>
                             <constraint firstItem="08e-4H-taC" firstAttribute="trailing" secondItem="Ylt-Rj-TaM" secondAttribute="trailing" id="tNP-0d-7G5"/>
+                            <constraint firstItem="JBY-DA-PS1" firstAttribute="top" secondItem="oCy-4k-hHc" secondAttribute="bottom" id="vmH-NN-aLN"/>
                         </constraints>
                         <variation key="default">
                             <mask key="constraints">
@@ -946,7 +971,7 @@
                                                         <constraint firstAttribute="width" constant="234" id="dej-7W-qN5"/>
                                                     </constraints>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                                    <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                                    <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                                     <nil key="highlightedColor"/>
                                                     <variation key="default">
                                                         <mask key="constraints">

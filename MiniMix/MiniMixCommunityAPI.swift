@@ -74,12 +74,18 @@ class MiniMixCommunityAPI {
                 completion!(success: false, message: "signup failed to return parseable json", error: nil)
                 return
             }
-            guard let apiStatus = jsonDictionary["status"] as? Int where apiStatus > 199 && apiStatus < 300 else {
-                completion!(success: false, message: jsonDictionary["message"] as? String, error: NSError(domain: "api error", code: MiniMixCommunityAPI.ErrorCodes.API_ERROR, userInfo: nil))
-                return
+            //TODO: THIS IS NOT WORKING...the status cast is supposed to fail when json doesn't have it..
+            //      but it is actually casting as some big number...
+            if let statIndex = jsonDictionary.indexForKey("status") {
+                print("status seems to be there??:\(jsonDictionary[statIndex])")
+                if let apiStatus = jsonDictionary["status"] as? Int {
+                    if apiStatus < 200 || apiStatus >= 300 {
+                        completion!(success: false, message: jsonDictionary["message"] as? String, error: NSError(domain: "api error", code: MiniMixCommunityAPI.ErrorCodes.API_ERROR, userInfo: nil))
+                    }
+                }
             }
-            guard let receivedDisplayName = jsonDictionary[User.Keys.SocialName] as? String where receivedDisplayName == publicName,
-             let receivedEmailConfirmation = jsonDictionary[User.Keys.Email] as? String where receivedEmailConfirmation == email  else {
+            guard let receivedDisplayName = jsonDictionary[User.Keys.SocialName] as? String,
+                let receivedEmailConfirmation = jsonDictionary[User.Keys.Email] as? String where receivedEmailConfirmation == email  else {
                 completion!(success: false, message: "User was not succesfully registered with MiniMix, please try again later", error: nil)
                 return
             }
