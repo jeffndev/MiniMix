@@ -39,7 +39,7 @@ class MiniMixCommunityAPI {
     private let DEFAULTS_KEY_API_EXPIRY = "MIX_API_LOGIN_EXPIRY"
     
     //MARK: PUBLIC API interface..
-    func registerNewUser(email: String, password: String, publicName: String, completion: CompletionHander) {
+    func registerNewUser(email: String, password: String, publicName: String, completion: DataCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/register_user"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -54,11 +54,11 @@ class MiniMixCommunityAPI {
         let session = NSURLSession.sharedSession()
         let task = session.dataTaskWithRequest(request) { data, response, error in
             guard error == nil else {
-                completion!(success: false, message: "error recevied from data task", error: error)
+                completion!(success: false, jsonData: nil, message: "error recevied from data task", error: error)
                 return
             }
             guard let data = data else {
-                completion!(success: false, message: "data from JSON request came up empty", error: error)
+                completion!(success: false, jsonData: nil, message: "data from JSON request came up empty", error: error)
                 return
             }
             var parsedResult: AnyObject!
@@ -66,34 +66,36 @@ class MiniMixCommunityAPI {
                 parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
             } catch let jsonErr as NSError {
                 print("ooops register_user failed on http return: \(jsonErr)")
-                completion!(success: false, message: "signup failed to return parseable json", error: nil)
+                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
                 return
             }
             print(parsedResult)
             guard let jsonDictionary = parsedResult as? [String: AnyObject] else {
-                completion!(success: false, message: "signup failed to return parseable json", error: nil)
+                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
                 return
             }
-            //TODO: THIS IS NOT WORKING...the status cast is supposed to fail when json doesn't have it..
-            //      but it is actually casting as some big number...
+            
             if let statIndex = jsonDictionary.indexForKey("status") {
                 print("status seems to be there??:\(jsonDictionary[statIndex])")
                 if let apiStatus = jsonDictionary["status"] as? Int {
                     if apiStatus < 200 || apiStatus >= 300 {
-                        completion!(success: false, message: jsonDictionary["message"] as? String, error: NSError(domain: "api error", code: MiniMixCommunityAPI.ErrorCodes.API_ERROR, userInfo: nil))
+                        completion!(success: false, jsonData: nil, message: jsonDictionary["message"] as? String, error: NSError(domain: "api error", code: MiniMixCommunityAPI.ErrorCodes.API_ERROR, userInfo: nil))
                     }
                 }
             }
             guard let receivedDisplayName = jsonDictionary[User.Keys.SocialName] as? String,
                 let receivedEmailConfirmation = jsonDictionary[User.Keys.Email] as? String where receivedEmailConfirmation == email  else {
-                completion!(success: false, message: "User was not succesfully registered with MiniMix, please try again later", error: nil)
+                completion!(success: false, jsonData: nil, message: "User was not succesfully registered with MiniMix, please try again later", error: nil)
                 return
+            }
+            if receivedDisplayName != publicName {
+                //HANDLE situation where this is a re-registration...
             }
             guard self.handleLocalAuthTokenData(jsonDictionary) else {
-                completion!(success: false, message: "Could not find authorization token after signup", error: nil)
+                completion!(success: false, jsonData: nil, message: "Could not find authorization token after signup", error: nil)
                 return
             }
-            completion!(success: true, message: nil, error: nil)
+            completion!(success: true, jsonData: jsonDictionary, message: nil, error: nil)
         }
         task.resume()
     }

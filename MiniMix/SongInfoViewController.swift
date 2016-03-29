@@ -36,7 +36,7 @@ class SongInfoViewController: UIViewController {
         songDecriptionTextView.delegate = self
         songStarRatings.delegate = self
         
-        tapGestureRecognizer = UITapGestureRecognizer(target: self, action: "tapWithinScroll:")
+        tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(tapWithinScroll(_:)))
         tapGestureRecognizer.numberOfTapsRequired = 1
     }
     override func viewWillAppear(animated: Bool) {

@@ -60,9 +60,9 @@ class SongMixerViewController: UITableViewController {
             }
         }
         // Do any additional setup after loading the view.
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .Add, target: self, action: "addTrack")
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .Add, target: self, action: #selector(SongMixerViewController.addTrack))
         navigationItem.hidesBackButton = true
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: " \u{2329} Back", style: .Plain, target: self, action: "back")
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: " \u{2329} Back", style: .Plain, target: self, action: #selector(SongMixerViewController.back))
     }
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
@@ -207,11 +207,12 @@ extension SongMixerViewController: TrackControllerDelegate {
     func recordLimitWarning() {
         print("\(WARNING_INTERVAL_SECONDS) left to record")
         recordTimer?.invalidate()
-        finalCountdownTimer = NSTimer.scheduledTimerWithTimeInterval(1, target: self, selector: "finalRecordCountdown", userInfo: nil, repeats: true)
+        finalCountdownTimer = NSTimer.scheduledTimerWithTimeInterval(1, target: self, selector: #selector(SongMixerViewController.finalRecordCountdown), userInfo: nil, repeats: true)
         finalCountdown = WARNING_INTERVAL_SECONDS
     }
     func finalRecordCountdown() {
-        if --finalCountdown <= 0 {
+        finalCountdown-=1
+        if finalCountdown <= 0 {
             finalCountdownTimer?.invalidate()
             stopRecord(currentRecordingTrackRef!) { success in
                 self.view.alpha = 1.0
@@ -222,7 +223,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         }
     }
     func recordProgress() {
-        recordSeconds++
+        recordSeconds+=1
         currentRecordingTrackRef?.lengthSeconds = Double(recordSeconds)
         if let cell = currentRecordingCell {
             cell.trackProgressUpdate()
@@ -241,8 +242,8 @@ extension SongMixerViewController: TrackControllerDelegate {
             }
         }
         //need to set a timer...
-        recordTimer = NSTimer.scheduledTimerWithTimeInterval(NSTimeInterval(SongMixerViewController.MAX_TRACK_SECONDS - WARNING_INTERVAL_SECONDS), target: self, selector: "recordLimitWarning", userInfo: nil, repeats: false)
-        recordProgressTimer = NSTimer.scheduledTimerWithTimeInterval(1, target: self, selector: "recordProgress", userInfo: nil, repeats: true)
+        recordTimer = NSTimer.scheduledTimerWithTimeInterval(NSTimeInterval(SongMixerViewController.MAX_TRACK_SECONDS - WARNING_INTERVAL_SECONDS), target: self, selector: #selector(recordLimitWarning), userInfo: nil, repeats: false)
+        recordProgressTimer = NSTimer.scheduledTimerWithTimeInterval(1, target: self, selector: #selector(recordProgress), userInfo: nil, repeats: true)
         recordSeconds = 0
         
         let session = AVAudioSession.sharedInstance()
@@ -306,18 +307,20 @@ extension SongMixerViewController: TrackControllerDelegate {
     }
    
     func stopRecord(track: AudioTrack, completion: (success: Bool) -> Void) {
-        track.lengthSeconds = Double(recordSeconds)
-        
-        recordTimer?.invalidate()
-        finalCountdownTimer?.invalidate()
-        recordProgressTimer?.invalidate()
         defer {
+            //nil out the ref to currentCell and currentTrack being recorded to
             currentRecordingTrackRef = nil
             if let cell =  currentRecordingCell {
                 cell.setStopRecordUIState()
             }
             currentRecordingCell = nil
         }
+        
+        track.lengthSeconds = Double(recordSeconds)
+        recordTimer?.invalidate()
+        finalCountdownTimer?.invalidate()
+        recordProgressTimer?.invalidate()
+        
         guard let audioRecorder = audioRecorder else {
             completion(success: false)
             return
@@ -327,23 +330,25 @@ extension SongMixerViewController: TrackControllerDelegate {
             player.stop()
         }
         players.removeAll()
-        print("stopping the recording: \(NSDate())")
+    
         let session = AVAudioSession.sharedInstance()
-        try! session.setActive(false)
+        do {
+            try session.setActive(false)
+        } catch {}
+        
         if let recordPath = audioRecorder.url.path {
             if !NSFileManager.defaultManager().fileExistsAtPath(recordPath) {
-                print("track path found no file: \(recordPath)")
+                //print("track path found no file: \(recordPath)")
                 completion(success: false)
             }
         }
+        track.hasRecordedFile = true
         dispatch_async(dispatch_get_main_queue()) {
-            track.hasRecordedFile = true
             CoreDataStackManager.sharedInstance.saveContext()
         }
         completion(success: true)
     }
     func eraseTrackRecording(track: AudioTrack, completion: (success: Bool) -> Void) {
-        //TODO: use try BLOCK rather than this, to avoid crashing..
         do {
             try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: song).path!)
         } catch {}

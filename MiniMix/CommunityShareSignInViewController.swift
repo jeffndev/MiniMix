@@ -78,8 +78,8 @@ class CommunityShareSignInViewController: UIViewController {
             return
         }
         let api = MiniMixCommunityAPI()
-        api.registerNewUser(email, password: password, publicName: moniker) { success, message, error in
-            //TODO: respond here to errors that are network and api related and when they should try again...
+        api.registerNewUser(email, password: password, publicName: moniker) { success, jsonDictionary, message, error in
+            //respond here to errors that are network and api related and when they should try again...
             if !success && error != nil {
                 switch error!.code {
                 case MiniMixCommunityAPI.ErrorCodes.API_ERROR:
@@ -101,12 +101,17 @@ class CommunityShareSignInViewController: UIViewController {
                     break
                 }
             }
+            var displayName = moniker
+            if let returnedDisplayName = jsonDictionary![User.Keys.SocialName] as? String where returnedDisplayName != moniker {
+                displayName = returnedDisplayName //Changing to what the API returned, this is because user is re-registering 
+                                                //from different device and used different display/social name
+            }
             //if success, want to make sure info gets saved and isRegistered is set an saved on the user
             dispatch_async(dispatch_get_main_queue()) {
                 self.currentUser.isRegistered = success
                 self.currentUser.email = success ? email : ""
                 self.currentUser.servicePassword = success ? password : ""
-                self.currentUser.socialName = success ? moniker : ""
+                self.currentUser.socialName = success ? displayName : ""
                 CoreDataStackManager.sharedInstance.saveContext()
                 self.dismissViewControllerAnimated(true, completion: nil)
             }

@@ -112,7 +112,7 @@ class TrackTableViewCell: UITableViewCell {
         // Initialization code
         trackNameTextView.delegate = self
         stopRecordButton.hidden = true
-        volumeSlider.addTarget(self, action: "volumeChanged", forControlEvents: .ValueChanged)
+        volumeSlider.addTarget(self, action: #selector(volumeChanged), forControlEvents: .ValueChanged)
     }
     
     func volumeChanged() {

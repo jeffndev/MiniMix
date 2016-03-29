@@ -175,11 +175,24 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
             player.stop()
         }
     }
-    func downloadSong(cell: SearchSongsCell, song: SongMixLite) {
+    
+    func checkIfSongExists(songInfo: SongMixLite) -> Bool {
+        let fetchRequest = NSFetchRequest(entityName: "SongMix")
+        fetchRequest.predicate = NSPredicate(format: "id == %@", songInfo.id)
+        let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
+        var fetchError: NSError? = nil
+        let fetchCount  = sharedContext.countForFetchRequest(fetchRequest, error: &fetchError)
+        if let fetchError = fetchError{
+            print(fetchError)
+            return false
+        }
+        return fetchCount > 0
+    }
+    func findOrCreateRemoteUserWithName( socialName: String) -> User? {
         //GET USER for Song (maybe you already have it, maybe not. If not create it here and save it
         let fetchRequest = NSFetchRequest(entityName: "User")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "socialName", ascending: true)]
-        fetchRequest.predicate = NSPredicate(format: "socialName == %@", song.userDisplayName)
+        fetchRequest.predicate = NSPredicate(format: "socialName == %@ AND isMe == %@", socialName, false)
         let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
         var remoteUser: User?
         do {
@@ -188,21 +201,34 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
                 if !usersFetched.isEmpty {
                     remoteUser = usersFetched.first!
                     if remoteUser!.isMe {
-                        return
+                        return nil
                     }
                 }
             }
         } catch let userFetchError as NSError {
             print("\(userFetchError)")
-            return
+            return nil
         }
-        dispatch_async(dispatch_get_main_queue()) {
-            if remoteUser === nil {
-                remoteUser = User(thisIsMe: false, userEmail: "", userPwd: "", displayName: song.userDisplayName, context: sharedContext)
-            }
-            let song = SongMix(songInfo: song, context: sharedContext)
-            song.artist = remoteUser
+        if remoteUser == nil {
+            remoteUser = User(thisIsMe: false, userEmail: "", userPwd: "", displayName: socialName, context: sharedContext)
             CoreDataStackManager.sharedInstance.saveContext()
         }
+        return remoteUser
+    }
+    
+    func downloadSong(cell: SearchSongsCell, song: SongMixLite) {
+        guard song.userDisplayName != currentUser.socialName else {
+            return
+        }
+        guard !checkIfSongExists(song) else {
+            return
+        }
+        guard let user = findOrCreateRemoteUserWithName(song.userDisplayName) else {
+            return
+        }
+        let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
+        let song = SongMix(songInfo: song, context: sharedContext)
+        song.artist = user
+        CoreDataStackManager.sharedInstance.saveContext()
     }
 }
