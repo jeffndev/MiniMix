@@ -115,12 +115,23 @@ class SongInfoViewController: UIViewController {
             song.rating = songStarRatings.rating
             song.songDescription = songDecriptionTextView.text
             song.keepPrivate = keepPrivateToggle.on
-            //TODO: send of a update_song api call task
             //WARNING: TODO: this maybe would be better in a delegate back to the SongList controller to do this..
             CoreDataStackManager.sharedInstance.saveContext()
-        }
+            //send off changes to the cloud, too...
+            let api = MiniMixCommunityAPI()
+            api.verifyAuthTokenOrSignin(song.artist!.email, password: song.artist!.servicePassword) { success, message, error in
+                guard success else {
+                    return
+                }
+                api.updateSongInfo(song, updateTrackInfoToo: false) { success, jsonData, message, error in
+                    if !success {
+                        print("could not update the song information in MiniMix Cloud")
+                    }
+                }
+            }
         //
         self.dismissViewControllerAnimated(true, completion: nil)
+        }
     }
 }
 

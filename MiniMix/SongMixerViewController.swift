@@ -31,7 +31,12 @@ class SongMixerViewController: UITableViewController {
     let TRACKS_SECTION = 0
     let MASTER_SECTION = 1
     
-    var song: SongMix!
+    var song: SongMix! {
+        didSet {
+            dataIsDirty = false
+        }
+    }
+    var dataIsDirty = false
     //var mixTracks = [AudioTrack]()
     var audioRecorder: AVAudioRecorder!
     var currentRecordingTrackRef: AudioTrack? //WARNING: I don't like these..
@@ -94,6 +99,10 @@ class SongMixerViewController: UITableViewController {
     func back() {
         //First time the song mix is created, AFTER recordings done, back to the Info Form
         //   after that, just go back to the list
+        if dataIsDirty {
+            song.version += 1
+            dataIsDirty = false
+        }
         CoreDataStackManager.sharedInstance.saveContext()
         
         if !song!.userInitialized {
@@ -122,6 +131,7 @@ class SongMixerViewController: UITableViewController {
         if trackCount < MAX_TRACKS {
             let newTrack = AudioTrack(trackName: "Audio \(trackCount + 1)", trackType: AudioTrack.TrackType.MIX, trackOrder: Int32(trackCount), insertIntoManagedObjectContext: sharedContext)
             newTrack.song = song
+            dataIsDirty = true
             CoreDataStackManager.sharedInstance.saveContext()
         }
     }
@@ -180,23 +190,12 @@ class SongMixerViewController: UITableViewController {
                 guard let track = cell.track else {
                     return
                 }
+                self.dataIsDirty = true
                 //delete audio file : TODO: delete the code below that is commented out...CoreData will take care of all that
                 dispatch_async(dispatch_get_main_queue()) {
                     self.sharedContext.deleteObject(track)
                     CoreDataStackManager.sharedInstance.saveContext()
                 }
-//                do {
-//                    try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: curSong).path!)
-//                } catch let error as NSError {
-//                    print("Could not delete track audio file: \(error)")
-//                }
-//                //delete track object
-//                if let indexOfTrack = curSong.tracks.indexOf(track) {
-//                    curSong.tracks.removeAtIndex(indexOfTrack)
-//                }
-//                //remove row in tableView
-//                //TODO: dispatch to main queue?
-//                self.tableView.deleteRowsAtIndexPaths([idxPath], withRowAnimation: .Automatic)
             }
             return [delete]
         }
@@ -231,6 +230,7 @@ extension SongMixerViewController: TrackControllerDelegate {
     }
     
     func recordTrack(track: AudioTrack, completion: (success: Bool) -> Void) {
+        //NOTE: i am setting the dataIsDirty flag after the recording stops and is successful
         print("recording: \(NSDate())")
         currentRecordingTrackRef = track
         let rowCount = tableView.numberOfRowsInSection(TRACKS_SECTION)
@@ -343,6 +343,7 @@ extension SongMixerViewController: TrackControllerDelegate {
             }
         }
         track.hasRecordedFile = true
+        dataIsDirty = true
         dispatch_async(dispatch_get_main_queue()) {
             CoreDataStackManager.sharedInstance.saveContext()
         }
@@ -358,6 +359,7 @@ extension SongMixerViewController: TrackControllerDelegate {
             track.lengthSeconds = 0.0
             CoreDataStackManager.sharedInstance.saveContext()
         }
+        dataIsDirty = true
         completion(success: true)
     }
     func stopTrackPlayback(track: AudioTrack) {
@@ -391,6 +393,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         track.mixVolume = volume
         if let player = players.filter( { $0.url! == AudioCache.trackPath(track, parentSong: song!) } ).first {
             player.volume = Float(track.mixVolume)
+            dataIsDirty = true
         } 
     }
     func muteTrackPlayback(track: AudioTrack, doMute: Bool) {
@@ -478,7 +481,7 @@ extension SongMixerViewController: NSFetchedResultsControllerDelegate {
             }
         case .Update:
             if indexPath!.section == TRACKS_SECTION {
-                let cell = tableView.cellForRowAtIndexPath(indexPath!) as! TrackTableViewCell
+                _ = tableView.cellForRowAtIndexPath(indexPath!) as! TrackTableViewCell
                 //let actor = controller.objectAtIndexPath(indexPath!) as! Person
                 //self.configureCell(cell, withActor: actor)
             }

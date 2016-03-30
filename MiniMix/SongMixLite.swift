@@ -23,6 +23,7 @@ struct SongMixLite {
     var mixFileUrl: String?
     var keepPrivate: Bool
     var userDisplayName: String
+    var version: Int
     //relationships
     //var tracks: [AudioTrack]
     //var artist: User?
@@ -50,6 +51,7 @@ struct SongMixLite {
         s3RandomId = dictionary[SongMix.Keys.S3RandomId] as? String
         keepPrivate = (dictionary[SongMix.Keys.PrivacyFlag] as? Bool) ?? false
         userDisplayName = dictionary[User.Keys.SocialName] as! String
+        version = (dictionary[SongMix.Keys.VersionNumber] as? Int) ?? 0
     }
     
 }

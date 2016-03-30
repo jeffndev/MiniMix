@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="9525" systemVersion="15D21" minimumToolsVersion="Xcode 7.0">
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="10171" systemVersion="15E65" minimumToolsVersion="Xcode 7.0">
     <entity name="AudioTrack" representedClassName=".AudioTrack" syncable="YES">
         <attribute name="createDate" optional="YES" attributeType="Date" syncable="YES"/>
         <attribute name="displayOrder" optional="YES" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
@@ -27,6 +27,7 @@
         <attribute name="s3RandomId" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="songDescription" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="userInitialized" optional="YES" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="version" attributeType="Integer 64" defaultValueString="0" syncable="YES"/>
         <relationship name="artist" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="songs" inverseEntity="User" syncable="YES"/>
         <relationship name="tracks" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="AudioTrack" inverseName="song" inverseEntity="AudioTrack" syncable="YES"/>
     </entity>
@@ -40,7 +41,7 @@
     </entity>
     <elements>
         <element name="AudioTrack" positionX="-54" positionY="63" width="128" height="225"/>
-        <element name="SongMix" positionX="-63" positionY="-18" width="128" height="255"/>
+        <element name="SongMix" positionX="-63" positionY="-18" width="128" height="270"/>
         <element name="User" positionX="-54" positionY="72" width="128" height="135"/>
     </elements>
 </model>

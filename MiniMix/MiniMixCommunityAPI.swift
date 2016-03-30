@@ -32,7 +32,7 @@ class MiniMixCommunityAPI {
     let API_BASE_URL_SECURE = "http://jnhomesvrnn:3000/api"
 
     let httpRequestBoundary = "---------------------------14737809831466499882746641449"
-    let JSON_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    static let JSON_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
     
     //private let DEFAULTS_KEY_LOGGED_IN_FLAG = "MIX_API_LOGGED_IN_FLAG"
     private let DEFAULTS_KEY_API_TOKEN = "MIX_API_LOGGIN_TOKEN" //TODO: maybe should put these in keychain instead of user defaults
@@ -89,7 +89,7 @@ class MiniMixCommunityAPI {
                 return
             }
             if receivedDisplayName != publicName {
-                //HANDLE situation where this is a re-registration...
+                //TODO: HANDLE situation where this is a re-registration...handle it further up, just pass the json back...
             }
             guard self.handleLocalAuthTokenData(jsonDictionary) else {
                 completion!(success: false, jsonData: nil, message: "Could not find authorization token after signup", error: nil)
@@ -252,6 +252,47 @@ class MiniMixCommunityAPI {
         task.resume()
     }
     
+    func updateSongInfo(song: SongMix, updateTrackInfoToo: Bool, completion: DataCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/update_song_info"
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "POST"
+        //HTTP HEADERS...
+        request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
+        request.addValue(buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
+        request.HTTPBody = mixFileMetaDataUploadPayload(song, includeTrackInfo: updateTrackInfoToo, htmlMultipartFormBoundary: httpRequestBoundary)
+        
+        //GOT REQUEST....
+        let session = NSURLSession.sharedSession()
+        let songTask = session.dataTaskWithRequest(request) { data, response, error in
+            guard error == nil else {
+                completion!(success: false, jsonData: nil, message: "error recevied from data task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, jsonData: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch let jsonErr as NSError {
+                print("\(jsonErr)")
+                completion!(success: false, jsonData: nil, message: "song update failed to return parseable json", error: nil)
+                return
+            }
+            print("uploadSongMeta returned json:")
+            print(parsedResult)
+            guard let parsedJson = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, jsonData: nil, message: "song update failed to return parseable json", error: nil)
+                return
+            }
+            //TODO: check the json response here for the song info...then do the file upload..
+            completion!(success: true, jsonData: parsedJson,  message: nil, error: nil)
+        }
+        songTask.resume()
+    }
+    
     func uploadSong(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
         uploadSongInfo(keepPrivate, song: song) { success, json, message, error in
             if !success {
@@ -313,6 +354,49 @@ class MiniMixCommunityAPI {
 
     }
     
+    func getMyUploadedSongs(completion: DataArrayCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/my_uploaded_songs"
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "GET"
+        //add headers
+        request.addValue( buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
+        
+        let session = NSURLSession.sharedSession()
+        let task = session.dataTaskWithRequest(request) { data, response, error in
+            guard error == nil else {
+                completion!(success: false, jsonData: nil, message: "error recevied from data task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, jsonData: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch _ as NSError {
+                completion!(success: false, jsonData: nil, message: "get my uploaded songs failed to return parseable json", error: nil)
+                return
+            }
+            print("getMySongs returned json:")
+            print(parsedResult)
+            if let jsonObject = parsedResult as? [String: AnyObject] {
+                if let status = jsonObject["status"] as? Int where status > 299 || status < 200 {
+                    let msg = (jsonObject["message"] as? String) ?? ""
+                    completion!(success: false, jsonData: nil, message: msg, error: nil)
+                    return
+                }
+            }
+            guard let parsedJsonArr = parsedResult as? [[String: AnyObject]] else {
+                completion!(success: false, jsonData: nil, message: "get my uploaded songs failed to return parseable json array", error: nil)
+                return
+            }
+            completion!(success: true, jsonData: parsedJsonArr, message: nil, error: nil)
+        }
+        task.resume()
+    }
+    
 //    func downloadCommnuitySongFile(email: String, songInfo:, completion: DataArrayCompletionHander) {
 //        //NOTE: this is not necessary, we already have the info to create and save a SongMix object,
 //        //      they should just play the song from the remote mix_file_url
@@ -321,15 +405,15 @@ class MiniMixCommunityAPI {
     
     //MARK: song upload PIECES...broken down so not one HUGE http request..
     func uploadSongInfo(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
-        //first check that the song mix actually happened...
-        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
-            AudioHelpers.createSongMixFile(song) { success in
-                if !success {
-                    completion!(success: success, jsonData: nil, message: "Unable to create track mix file", error: nil)
-                    return
-                }
-            }
-        }
+        //first check that the song mix actually happened...TODO: maybe this is more appropriate in the view controller or higher up..the file check
+//        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
+//            AudioHelpers.createSongMixFile(song) { success in
+//                if !success {
+//                    completion!(success: success, jsonData: nil, message: "Unable to create track mix file", error: nil)
+//                    return
+//                }
+//            }
+//        }
         let builtUrlString = "\(API_BASE_URL_SECURE)/upload_song"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -337,7 +421,7 @@ class MiniMixCommunityAPI {
         //HTTP HEADERS...
         request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
         request.addValue(buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
-        request.HTTPBody = mixFileMetaDataUploadPayload(keepPrivate, song: song, htmlMultipartFormBoundary: httpRequestBoundary)
+        request.HTTPBody = mixFileMetaDataUploadPayload(song, includeTrackInfo: true, htmlMultipartFormBoundary: httpRequestBoundary)
         
         //GOT REQUEST....
         let session = NSURLSession.sharedSession()
@@ -354,7 +438,7 @@ class MiniMixCommunityAPI {
             do {
                 parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
             } catch let jsonErr as NSError {
-                print("ooops signin failed on http return: \(jsonErr)")
+                print("\(jsonErr)")
                 completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
                 return
             }
@@ -461,7 +545,7 @@ class MiniMixCommunityAPI {
             return false
         }
         let dateFormatter = NSDateFormatter()
-        dateFormatter.dateFormat =  JSON_DATE_FORMAT_STRING // "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        dateFormatter.dateFormat =  MiniMixCommunityAPI.JSON_DATE_FORMAT_STRING // "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         guard let authtoken_expiry = dateFormatter.dateFromString(str_authtoken_expiry) else {
             print("could not interpret expiry date")
             return false
@@ -525,11 +609,11 @@ class MiniMixCommunityAPI {
         return data
     }
     
-    private func mixFileMetaDataUploadPayload(keepPrivate: Bool, song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+    private func mixFileMetaDataUploadPayload(song: SongMix, includeTrackInfo:Bool, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
         let dataPiecesForBody = NSMutableData()
         
-        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.PrivacyFlag, theData: "\(keepPrivate)"))
-        //dataPiecesForBody.appendData(addFormData(boundary, name: User.Keys.Email, theData: userEmail))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.PrivacyFlag, theData: "\(song.keepPrivate)"))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.VersionNumber, theData: "\(song.version)"))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: song.id))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.Name, theData: song.name))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.Genre, theData: song.genre))
@@ -542,16 +626,18 @@ class MiniMixCommunityAPI {
         if let song_description = song.songDescription {
             dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.SongDescription, theData: song_description))
         }
-        for (index, track) in song.tracks.enumerate() {
-            dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.ID)\(index)", theData: track.id))
-            dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.Name)\(index)" , theData: track.name))
-            dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.TrackDisplayOrder)\(index)", theData: "\(track.displayOrder)"))
-            dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.MixVolume)\(index)", theData: "\(track.mixVolume)"))
-            if let secs_duration = track.lengthSeconds as? Double {
-                dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.DurationSeconds)\(index)", theData: "\(secs_duration)"))
-            }
-            if let track_description = track.trackDescription {
-                dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.TrackDescription)\(index)", theData: track_description))
+        if includeTrackInfo {
+            for (index, track) in song.tracks.enumerate() {
+                dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.ID)\(index)", theData: track.id))
+                dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.Name)\(index)" , theData: track.name))
+                dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.TrackDisplayOrder)\(index)", theData: "\(track.displayOrder)"))
+                dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.MixVolume)\(index)", theData: "\(track.mixVolume)"))
+                if let secs_duration = track.lengthSeconds as? Double {
+                    dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.DurationSeconds)\(index)", theData: "\(secs_duration)"))
+                }
+                if let track_description = track.trackDescription {
+                    dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.TrackDescription)\(index)", theData: track_description))
+                }
             }
         }
         dataPiecesForBody.appendData("--\(boundary)--\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)

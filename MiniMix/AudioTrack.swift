@@ -57,14 +57,27 @@ class AudioTrack: NSManagedObject {
         super.init(entity: entity, insertIntoManagedObjectContext: context)
         
         id = dictionary[AudioTrack.Keys.ID] as! String
-        name = dictionary[AudioTrack.Keys.Name] as! String
-        createDate = dictionary[AudioTrack.Keys.CreatedAt] as! NSDate
-        trackType = dictionary[AudioTrack.Keys.TrackType] as! String
+        name = (dictionary[AudioTrack.Keys.Name] as? String) ?? ""
+        //Date from string...
+        if let strCreateDate = dictionary[AudioTrack.Keys.CreatedAt] as? String where !strCreateDate.isEmpty {
+            let dateFormater = NSDateFormatter()
+            dateFormater.dateFormat =  MiniMixCommunityAPI.JSON_DATE_FORMAT_STRING // "yyyy-MM-dd'T'HH:mm:ssZ"
+            if let parsedDate = dateFormater.dateFromString(strCreateDate) {
+                createDate = parsedDate
+            } else {
+                createDate = NSDate()
+            }
+        } else {
+            createDate = NSDate()
+        }
+
+        trackType = TrackType.MIX //  dictionary[AudioTrack.Keys.TrackType] as! String TODO: this is not needed any more remove..
         trackDescription = dictionary[AudioTrack.Keys.TrackDescription] as? String
         lengthSeconds = dictionary[AudioTrack.Keys.DurationSeconds] as? Double
         mixVolume = dictionary[AudioTrack.Keys.MixVolume] as! Float
-        hasRecordedFile = dictionary[AudioTrack.Keys.HasRecordedFile] as! Bool
-        displayOrder = dictionary[AudioTrack.Keys.TrackDisplayOrder] as! Int32
+        hasRecordedFile = (dictionary[AudioTrack.Keys.HasRecordedFile] as? Bool) ?? true
+        print( dictionary[AudioTrack.Keys.TrackDisplayOrder] )
+        displayOrder = Int32(dictionary[AudioTrack.Keys.TrackDisplayOrder] as! Int)
         trackFileUrl = dictionary[AudioTrack.Keys.TrackFileRemoteUrl] as? String
         s3RandomId = dictionary[AudioTrack.Keys.S3RandomId] as? String
     }

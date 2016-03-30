@@ -112,23 +112,132 @@ class SongListViewController: UIViewController {
         navigationController!.pushViewController(recordViewController, animated: true)
     }
     @IBAction func cloudReSyncAction() {
+        guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
+            doSignUp()
+            return
+        }
+        let api = MiniMixCommunityAPI()
+        api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
+            guard success else {
+                let msg = message ?? "Could not authenticate with the server"
+                self.showAlertMsg("Cloud Sync Failure", msg: msg, posthandler: nil)
+                return
+            }
+            self.cloudSyncTask()
+        }
+    }
+    func cloudSyncTask() {
+        //TODO: PROGRESS or ACTIVITY INDICATOR??
         //main purpose is to pull down existing mixes for this user after re-registering
         //step 1.  for each song in the viewed songs, update any versions (UPSYNC)
-        
+        let songs = songsFetchedResultsControllerForUser.fetchedObjects as! [SongMix]
+        var songIdSet = Set<String>()
+        for song in songs {
+            songIdSet.insert(song.id)
+            cloudUploadTasks(song, keepPrivate: song.keepPrivate) //server handles version and only updates what's necessary..
+        }
         //step 2. get list of songs from cloud (along with versions), if not found on device (or version is less..refresh as needed (DOWNSYNC)
+        let api = MiniMixCommunityAPI()
+        api.getMyUploadedSongs() { success, jsonResponseArr, message, error in
+            guard error == nil else {
+                print("search error: \(error!.localizedDescription)")
+                return
+            }
+            guard success else {
+                if let msg = message {
+                    dispatch_async(dispatch_get_main_queue()) {
+                        self.showAlertMsg("Sync Songs Failure", msg: msg, posthandler: nil)
+                    }
+                }
+                return
+            }
+            guard let songArray = jsonResponseArr else {
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.showAlertMsg("Sync Songs Failure", msg: "Server error", posthandler: nil)
+                }
+                return
+            }
+            dispatch_async(dispatch_get_main_queue()) {
+                let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
+                let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
+                let _ = songArray.map() {
+                    if !songIdSet.contains($0[SongMix.Keys.ID] as! String) {
+                        let song = SongMix(jsonDictionary: $0, context: sharedContext)
+                        dispatch_async(backgroundQueue) {
+                            self.downSyncUserSongFile(song)
+                        }
+                        song.artist = self.currentUser
+                        if let tracks = $0["audio_tracks"] as? [[String: AnyObject]] {
+                            let _ = tracks.map() {
+                                let track = AudioTrack(dictionary: $0, context: sharedContext)
+                                track.song = song
+                                dispatch_async(backgroundQueue) {
+                                    self.downSyncUserTrackFile(track)                                }
+                            }
+                        }
+                    }
+                }
+                CoreDataStackManager.sharedInstance.saveContext()
+            }
+        }
+    }
+    
+    func downSyncUserSongFile(song: SongMix) {
+        //create subdirectory in Documents for the SONG, the tracks and mix go in there...
+        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.songDirectory(song)) {
+            do {
+                try NSFileManager.defaultManager().createDirectoryAtPath(AudioCache.songDirectory(song), withIntermediateDirectories: true, attributes: nil)
+            } catch let error as NSError {
+                print("could not create song directory, not able to prepare for recording: \(error.localizedDescription)")
+                return
+            }
+        }
+        guard !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) else {
+            print("mix file already exists locally, not downloading")
+            return
+        }
+        guard let songUrl = song.mixFileUrl else {
+            return
+        }
+        guard let songData = NSData(contentsOfURL: NSURL(string: songUrl)!) else {
+            return
+        }
+        songData.writeToURL(AudioCache.mixedSongPath(song), atomically: true)
+        print("mix file for song: \(song.name) downloaded locally with Sync")
+    }
+            
+    func downSyncUserTrackFile(track: AudioTrack) {
+        //create subdirectory in Documents for the SONG, the tracks and mix go in there...
+        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.songDirectory(track.song!)) {
+            do {
+                try NSFileManager.defaultManager().createDirectoryAtPath(AudioCache.songDirectory(track.song!), withIntermediateDirectories: true, attributes: nil)
+            } catch let error as NSError {
+                print("could not create song directory, not able to prepare for recording: \(error.localizedDescription)")
+                return
+            }
+        }
+        guard !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.trackPath(track, parentSong: track.song!).path!) else {
+            print("track file already exists locally, not downloading")
+            return
+        }
+        guard let trackUrl = track.trackFileUrl else {
+            return
+        }
+        guard let trackData = NSData(contentsOfURL: NSURL(string: trackUrl)!) else {
+            return
+        }
+        trackData.writeToURL(AudioCache.trackPath(track, parentSong: track.song!), atomically: true)
+        print("track file \(track.name) for song: \(track.song!.name) downloaded locally with Sync")
     }
     
     @IBAction func shareAction() {
         if let indexPath = tableView.indexPathForSelectedRow {
             let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
             if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
-                //TODO: mix it...perhaps dispatch to main queue?
                 AudioHelpers.createSongMixFile(song) { success in
                     if success {
                         self.shareMixFile(song)
-                    } else {
-                        //TODO: ALERT popup, couldn't create the mix..
-                    }
+                    } //note: fail silently..
                 }
             } else {
                 shareMixFile(song)
@@ -288,12 +397,12 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
                     self.showAlertMsg("Cloud Upload", msg: "Song failed to upload properly, no links returned, please try again", posthandler: nil)
                     return
                 }
+                song.keepPrivate = keepPrivate
                 song.s3RandomId = s3Id
                 song.mixFileUrl = remoteUrl
                 CoreDataStackManager.sharedInstance.saveContext()
             }
             for track in song.tracks where track.hasRecordedFile {
-                //if !track.hasRecordedFile { continue }
                 api.uploadTrackFile(track) { success, jsonData, message, error in
                     if success && jsonData != nil{
                         dispatch_async(dispatch_get_main_queue()) {
@@ -472,8 +581,19 @@ extension SongListViewController: SongPlaybackDelegate {
         return true
     }
     func syncSongWithCloud(cell: SongListingTableViewCell, song: SongMix) {
-        //TODO:
-        
+        guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
+            doSignUp()
+            return
+        }
+        let api = MiniMixCommunityAPI()
+        api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
+            guard success else {
+                let msg = message ?? "Could not authenticate with the server"
+                self.showAlertMsg("Sync Upload Failure", msg: msg, posthandler: nil)
+                return
+            }
+            self.cloudUploadTasks(song, keepPrivate: song.keepPrivate)
+        }
     }
 }
 //MARK: AVAudioPlayerDelegate

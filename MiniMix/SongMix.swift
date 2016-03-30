@@ -23,6 +23,7 @@ class SongMix: NSManagedObject {
         static let MixFileRemoteUrl = "mix_file_url"
         static let S3RandomId = "s3_random_id"
         static let PrivacyFlag = "private_flag"
+        static let VersionNumber = "version"
     }
     static let UNCHARACTERIZED_GENRE = "Uncharacterized"
     static let genres = [ "Country", "Classical", "Rock", "Folk", "Jazz", "Alternative", "Metal", UNCHARACTERIZED_GENRE]
@@ -39,6 +40,7 @@ class SongMix: NSManagedObject {
     @NSManaged var s3RandomId: String?
     @NSManaged var mixFileUrl: String?
     @NSManaged var keepPrivate: Bool
+    @NSManaged var version: Int
     //relationships
     @NSManaged var tracks: [AudioTrack]
     @NSManaged var artist: User?
@@ -56,12 +58,19 @@ class SongMix: NSManagedObject {
         super.init(entity: entity, insertIntoManagedObjectContext: context)
         
         id = dictionary[SongMix.Keys.ID] as! String
-        name = dictionary[SongMix.Keys.Name] as! String
+        name = (dictionary[SongMix.Keys.Name] as? String) ?? ""
         //Date from string...
-        let strCreateDate = dictionary[SongMix.Keys.CreatedAt] as! String
-        let dateFormater = NSDateFormatter()
-        dateFormater.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-        createDate = dateFormater.dateFromString(strCreateDate)!
+        if let strCreateDate = dictionary[SongMix.Keys.CreatedAt] as? String where !strCreateDate.isEmpty {
+            let dateFormater = NSDateFormatter()
+            dateFormater.dateFormat =  MiniMixCommunityAPI.JSON_DATE_FORMAT_STRING // "yyyy-MM-dd'T'HH:mm:ssZ"
+            if let parsedDate = dateFormater.dateFromString(strCreateDate) {
+                createDate = parsedDate
+            } else {
+                createDate = NSDate()
+            }
+        } else {
+            createDate = NSDate()
+        }
         
         genre = dictionary[SongMix.Keys.Genre] as! String
         userInitialized = true //dictionary[SongMix.Keys.UserDidSetSongInfo] as! Bool
@@ -72,6 +81,7 @@ class SongMix: NSManagedObject {
         mixFileUrl = dictionary[SongMix.Keys.MixFileRemoteUrl] as? String
         s3RandomId = dictionary[SongMix.Keys.S3RandomId] as? String
         keepPrivate = (dictionary[SongMix.Keys.PrivacyFlag] as? Bool) ?? false
+        version = dictionary[SongMix.Keys.VersionNumber] as! Int
     }
     
     init(songInfo: SongMixLite, context: NSManagedObjectContext) {
