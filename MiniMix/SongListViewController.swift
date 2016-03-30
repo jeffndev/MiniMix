@@ -13,6 +13,7 @@ import CoreData
 protocol SongPlaybackDelegate {
     func playSong(cell: SongListingTableViewCell, song: SongMix)
     func stopSong(cell: SongListingTableViewCell, song: SongMix)
+    func syncSongWithCloud(cell: SongListingTableViewCell, song: SongMix)
 }
 
 class SongListViewController: UIViewController {
@@ -20,6 +21,7 @@ class SongListViewController: UIViewController {
     let CELL_ID = "SongCell"
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var shareButton: UIBarButtonItem!
+    @IBOutlet weak var cloudSyncButton: UIBarButtonItem!
     
     var currentUser: User!
     var players = [AVAudioPlayer]()
@@ -109,6 +111,13 @@ class SongListViewController: UIViewController {
         recordViewController.song = newSong
         navigationController!.pushViewController(recordViewController, animated: true)
     }
+    @IBAction func cloudReSyncAction() {
+        //main purpose is to pull down existing mixes for this user after re-registering
+        //step 1.  for each song in the viewed songs, update any versions (UPSYNC)
+        
+        //step 2. get list of songs from cloud (along with versions), if not found on device (or version is less..refresh as needed (DOWNSYNC)
+    }
+    
     @IBAction func shareAction() {
         if let indexPath = tableView.indexPathForSelectedRow {
             let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
@@ -421,7 +430,10 @@ extension SongListViewController: SongPlaybackDelegate {
     func playSong(cell: SongListingTableViewCell, song: SongMix) {
         if currentPlayingCellRef == nil {
             currentPlayingCellRef = cell
-            cell.setReadyToPlayUIState(!playMixNaiveImplementation(song))
+            cell.setReadyToPlayUIState(!playMixImplementation(song))
+        } else {
+            //someone else is playing..wait until they're done..
+            cell.setReadyToPlayUIState(true)
         }
     }
     func stopSong(cell: SongListingTableViewCell, song: SongMix) {
@@ -429,7 +441,7 @@ extension SongListViewController: SongPlaybackDelegate {
         let _ = players.map() { $0.stop() }
     }
     
-    func playMixNaiveImplementation(song: SongMix) ->Bool {
+    func playMixImplementation(song: SongMix) -> Bool {
         players.removeAll()
         var path: NSURL
         for track in song.tracks {
@@ -458,6 +470,10 @@ extension SongListViewController: SongPlaybackDelegate {
             player.play()
         }
         return true
+    }
+    func syncSongWithCloud(cell: SongListingTableViewCell, song: SongMix) {
+        //TODO:
+        
     }
 }
 //MARK: AVAudioPlayerDelegate

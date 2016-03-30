@@ -99,6 +99,50 @@ class MiniMixCommunityAPI {
         }
         task.resume()
     }
+    func checkIfSongIsPrivate(song: SongMix, completion: BoolCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/song_privacy" + escapedParameters(["song_id": song.id])
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "GET"
+        //add headers
+        request.addValue( buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
+        
+        //add body
+        let session = NSURLSession.sharedSession()
+        let task = session.dataTaskWithRequest(request) { data, response, error in
+            guard error == nil else {
+                completion!(success: false, istrue: nil, message: "error recevied from song privacy check task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, istrue: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch let jsonErr as NSError {
+                print("verify_token http return: \(jsonErr)")
+                completion!(success: false, istrue: nil, message: "song privacy check failed to return parseable json", error: nil)
+                return
+            }
+            print(parsedResult)
+            guard let jsonDictionary = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, istrue: nil, message: "song privacy check failed to return parseable json", error: nil)
+                return
+            }
+            guard let songInfo = jsonDictionary["song_info"] as? [String: AnyObject] else {
+                completion!(success: false, istrue: nil, message: "song privacy check failed to return parseable json", error: nil)
+                return
+            }
+            guard let isPrivate = songInfo["private_flag"] as? Bool else {
+                completion!(success: false, istrue: nil, message: "song privacy check failed to return parseable json", error: nil)
+                return
+            }
+            completion!(success: true, istrue: isPrivate, message: nil, error: nil)
+        }
+        task.resume()
+    }
     
     func verifyToken(completion: BoolCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/verify_token"
@@ -106,12 +150,9 @@ class MiniMixCommunityAPI {
         let request = NSMutableURLRequest(URL: url)
         request.HTTPMethod = "GET"
         //add headers
-        //request.addValue( buildContentTypeHdr(.HTTPJsonContent), forHTTPHeaderField: "Content-Type" )
         request.addValue( buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
         
         //add body
-        //let encrypted_password = AESCrypt.encrypt(password, password: API_AUTH_PASSWORD)
-        //request.HTTPBody = "{\"email\":\"\(email)\",\"password\":\"\(encrypted_password)\"}".dataUsingEncoding(NSUTF8StringEncoding)
         let session = NSURLSession.sharedSession()
         let task = session.dataTaskWithRequest(request) { data, response, error in
           

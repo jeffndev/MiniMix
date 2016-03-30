@@ -13,7 +13,9 @@ class SongListingTableViewCell: UITableViewCell {
     @IBOutlet weak var songTitleLabel: UILabel!
     @IBOutlet weak var songCommentLabel: UITextView!
     @IBOutlet weak var songStarsRankLable: UILabel!
+    //optional items...
     @IBOutlet weak var artistName: UILabel!
+    @IBOutlet weak var syncButton: UIButton!
     
     @IBOutlet weak var stopButton: UIButton!
     @IBOutlet weak var playButton: UIButton!
@@ -26,8 +28,6 @@ class SongListingTableViewCell: UITableViewCell {
             return
         }
         setReadyToPlayUIState(false)
-        //playButton.hidden = true
-        //stopButton.hidden = false
         delegate.playSong(self, song: song)
     }
     @IBAction func stopPlayback(sender: AnyObject) {
@@ -35,13 +35,26 @@ class SongListingTableViewCell: UITableViewCell {
             return
         }
         setReadyToPlayUIState(true)
-        //playButton.hidden = false
-        //stopButton.hidden = true
         delegate.stopSong(self, song: song)
     }
-    
+    @IBAction func syncSongToCloud() {
+        guard let song = song, delegate = delegate else {
+            return
+        }
+        delegate.syncSongWithCloud(self, song: song)
+    }
     func setReadyToPlayUIState(ready: Bool) {
-        playButton.hidden = !ready
-        stopButton.hidden = ready
+        print(ready)
+        dispatch_async(dispatch_get_main_queue()) {
+            self.playButton.hidden = !ready
+            self.stopButton.hidden = ready
+            self.playButton.enabled = ready
+        }
+    }
+    func setSyncWarningState(shouldSync: Bool) {
+        //TODO:
+        if let syncButton = syncButton {
+            syncButton.hidden = !shouldSync
+        }
     }
 }

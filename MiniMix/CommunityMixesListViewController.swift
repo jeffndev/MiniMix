@@ -63,12 +63,55 @@ class CommunityMixesListViewController: SongListViewController {
             //TODO: gotta figure out, in storyboard where this is going to fit in that cell..its already pretty tight
             artistNameLbl.text = artist.socialName
         }
+        cell.contentView.alpha = song.keepPrivate ? 0.3 : 1.0
     }
 }
 
 //MARK: SongPlayback Delegate Protocols...
 extension CommunityMixesListViewController {
-    override func playMixNaiveImplementation(song: SongMix) -> Bool{
+    override func playSong(cell: SongListingTableViewCell, song: SongMix) {
+        //check if private, don't play if so...and possibly..erase from the db?
+        guard currentPlayingCellRef == nil else {
+            print("another mix is playing..have to wait")
+            //someone else is playing..wait until they're done..
+            cell.setReadyToPlayUIState(true)
+            return
+        }
+        currentPlayingCellRef = cell
+        //cell.setReadyToPlayUIState(true) //
+        let api = MiniMixCommunityAPI()
+        api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
+            guard success else {
+                self.currentPlayingCellRef = nil
+                cell.setReadyToPlayUIState(true)
+                let msg = message ?? "Could not authenticate with the server"
+                self.showAlertMsg("Player Failure", msg: msg, posthandler: nil)
+                return
+            }
+            api.checkIfSongIsPrivate(song) { success, istrue, message, error in
+                guard success, let isprivate = istrue else {
+                    self.currentPlayingCellRef = nil
+                    cell.setReadyToPlayUIState(true)
+                    return
+                }
+                dispatch_async(dispatch_get_main_queue()){
+                    song.keepPrivate = isprivate
+                    CoreDataStackManager.sharedInstance.saveContext()
+                }
+                if !isprivate {
+                    cell.setReadyToPlayUIState(!self.playMixImplementation(song))
+                } else {
+                    self.currentPlayingCellRef = nil
+                    cell.setReadyToPlayUIState(true)
+                    dispatch_async(dispatch_get_main_queue()){
+                        self.showAlertMsg("Private Song", msg: "This song has been made private to the community by the artist.", posthandler: nil)
+                    }
+                }
+            }
+        }
+    }
+    
+    override func playMixImplementation(song: SongMix) -> Bool{
         players.removeAll()
         if let songUrl = song.mixFileUrl {
             do {

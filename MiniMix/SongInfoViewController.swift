@@ -21,6 +21,7 @@ class SongInfoViewController: UIViewController {
     @IBOutlet weak var songNameTextField: UITextField!
     @IBOutlet weak var songDecriptionTextView: UITextView!
     @IBOutlet weak var songStarRatings: FloatRatingView!
+    @IBOutlet weak var keepPrivateToggle: UISwitch!
     
     var tapGestureRecognizer: UITapGestureRecognizer!
     
@@ -51,6 +52,7 @@ class SongInfoViewController: UIViewController {
             if let row = SongMix.genres.indexOf(song.genre) {
                 picker.selectRow(row, inComponent: 0, animated: true)
             }
+            keepPrivateToggle.on = song.keepPrivate
         }
     }
     override func viewWillDisappear(animated: Bool) {
@@ -112,6 +114,8 @@ class SongInfoViewController: UIViewController {
             song.userInitialized = true
             song.rating = songStarRatings.rating
             song.songDescription = songDecriptionTextView.text
+            song.keepPrivate = keepPrivateToggle.on
+            //TODO: send of a update_song api call task
             //WARNING: TODO: this maybe would be better in a delegate back to the SongList controller to do this..
             CoreDataStackManager.sharedInstance.saveContext()
         }
