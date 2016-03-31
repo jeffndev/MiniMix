@@ -252,7 +252,7 @@ class MiniMixCommunityAPI {
         task.resume()
     }
     
-    func updateSongInfo(song: SongMix, updateTrackInfoToo: Bool, completion: DataCompletionHander) {
+    func updateSongInfo(song: SongMix, completion: DataCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/update_song_info"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -260,7 +260,7 @@ class MiniMixCommunityAPI {
         //HTTP HEADERS...
         request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
         request.addValue(buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
-        request.HTTPBody = mixFileMetaDataUploadPayload(song, includeTrackInfo: updateTrackInfoToo, htmlMultipartFormBoundary: httpRequestBoundary)
+        request.HTTPBody = mixFileMetaDataUploadPayload(song, includeTrackInfo: false, htmlMultipartFormBoundary: httpRequestBoundary)
         
         //GOT REQUEST....
         let session = NSURLSession.sharedSession()
@@ -406,14 +406,14 @@ class MiniMixCommunityAPI {
     //MARK: song upload PIECES...broken down so not one HUGE http request..
     func uploadSongInfo(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
         //first check that the song mix actually happened...TODO: maybe this is more appropriate in the view controller or higher up..the file check
-//        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
-//            AudioHelpers.createSongMixFile(song) { success in
-//                if !success {
-//                    completion!(success: success, jsonData: nil, message: "Unable to create track mix file", error: nil)
-//                    return
-//                }
-//            }
-//        }
+        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
+            AudioHelpers.createSongMixFile(song) { success in
+                if !success {
+                    completion!(success: success, jsonData: nil, message: "Unable to create track mix file", error: nil)
+                    return
+                }
+            }
+        }
         let builtUrlString = "\(API_BASE_URL_SECURE)/upload_song"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)

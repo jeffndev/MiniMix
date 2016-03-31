@@ -101,7 +101,16 @@ class SongMixerViewController: UITableViewController {
         //   after that, just go back to the list
         if dataIsDirty {
             song.version += 1
+            print("SONG VERSION CHANGED from \(song.version - 1) to \(song.version) (\(song.name))")
             dataIsDirty = false
+            let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
+            dispatch_async(backgroundQueue) {
+                AudioHelpers.createSongMixFile(self.song) { success in
+                    if !success {
+                        print("New Mix file failed")
+                    }
+                }
+            }
         }
         CoreDataStackManager.sharedInstance.saveContext()
         
@@ -235,10 +244,11 @@ extension SongMixerViewController: TrackControllerDelegate {
         currentRecordingTrackRef = track
         let rowCount = tableView.numberOfRowsInSection(TRACKS_SECTION)
         for row in 0..<rowCount {
-            let cell =  tableView.cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: TRACKS_SECTION)) as! TrackTableViewCell
-            if cell.track === currentRecordingTrackRef {
-                currentRecordingCell  = cell
-                break
+            if let cell =  tableView.cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: TRACKS_SECTION)) as? TrackTableViewCell {
+                if cell.track === currentRecordingTrackRef {
+                    currentRecordingCell  = cell
+                    break
+                }
             }
         }
         //need to set a timer...
@@ -481,7 +491,7 @@ extension SongMixerViewController: NSFetchedResultsControllerDelegate {
             }
         case .Update:
             if indexPath!.section == TRACKS_SECTION {
-                _ = tableView.cellForRowAtIndexPath(indexPath!) as! TrackTableViewCell
+                //_ = tableView.cellForRowAtIndexPath(indexPath!) as! TrackTableViewCell
                 //let actor = controller.objectAtIndexPath(indexPath!) as! Person
                 //self.configureCell(cell, withActor: actor)
             }

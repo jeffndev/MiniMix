@@ -27,7 +27,7 @@
         <attribute name="s3RandomId" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="songDescription" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="userInitialized" optional="YES" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
-        <attribute name="version" attributeType="Integer 64" defaultValueString="0" syncable="YES"/>
+        <attribute name="version" attributeType="Integer 32" defaultValueString="0" syncable="YES"/>
         <relationship name="artist" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="songs" inverseEntity="User" syncable="YES"/>
         <relationship name="tracks" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="AudioTrack" inverseName="song" inverseEntity="AudioTrack" syncable="YES"/>
     </entity>

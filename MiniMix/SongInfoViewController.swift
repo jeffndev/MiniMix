@@ -123,7 +123,7 @@ class SongInfoViewController: UIViewController {
                 guard success else {
                     return
                 }
-                api.updateSongInfo(song, updateTrackInfoToo: false) { success, jsonData, message, error in
+                api.updateSongInfo(song) { success, jsonData, message, error in
                     if !success {
                         print("could not update the song information in MiniMix Cloud")
                     }
