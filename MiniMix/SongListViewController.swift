@@ -538,10 +538,11 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
 extension SongListViewController: SongPlaybackDelegate {
     func playSong(cell: SongListingTableViewCell, song: SongMix) {
         if currentPlayingCellRef == nil {
-            currentPlayingCellRef = cell
-            cell.setReadyToPlayUIState(!playMixImplementation(song))
+            let playerIsPlaying = playMixImplementation(song)
+            if playerIsPlaying { currentPlayingCellRef = cell }
+            cell.setReadyToPlayUIState(!playerIsPlaying)
         } else {
-            //someone else is playing..wait until they're done..
+            print("someone else is playing..wait until they're done..")
             cell.setReadyToPlayUIState(true)
         }
     }
@@ -655,10 +656,28 @@ extension SongListViewController: NSFetchedResultsControllerDelegate {
     //MARK: Configure Cell
     func configureCell( cell: SongListingTableViewCell, withSongMix song: SongMix) {
         cell.songTitleLabel.text = song.name
+        print(song.name)
+        print(song.version)
         cell.songCommentLabel.text = song.songDescription ?? ""
         cell.songStarsRankLable.text = song.rating == nil ? "" : String(Int(song.rating!))
         cell.song = song
         cell.delegate = self
-        print("cell named: \(song.name) was uploaded url: \(song.wasUploaded)")
+        
+        if let artist = song.artist where artist.isMe {
+            //Check if YOUR song has changed (higher version), should Sync to Cloud...but only for YOUR songs
+            let api = MiniMixCommunityAPI()
+            api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
+                guard success else {
+                    //Quiet failure, non-critical feature
+                    return
+                }
+                api.songCloudVersionOutOfDateCheck(song) { success, istrue, message, error in
+                    guard success, let isOutOfDate = istrue else {
+                        return
+                    }
+                    cell.setSyncWarningState(isOutOfDate)
+                }
+            }
+        }
     }
 }

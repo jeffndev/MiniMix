@@ -100,7 +100,11 @@ extension SearchCommunityViewController: UITableViewDataSource, UITableViewDeleg
         let song = currentResults[indexPath.row]
         cell.delegate = self
         cell.songInfo = song
-        cell.displayLabel.text = "\(song.name) by \(song.userDisplayName)"
+        cell.songArtistLabel.text = "artist: \(song.userDisplayName)"
+        cell.genreLabel.text = song.genre
+        cell.songNameLabel.text = song.name
+        cell.setReadyToPlayUIState(true)
+        cell.setDisabledStateForFailedMixPreviewDownload(false)
         return cell
     }
 }
@@ -160,13 +164,24 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
     func playSong(cell: SearchSongsCell, song: SongMixLite) {
         if let songUrl = song.mixFileUrl {
             do {
-                let songData = NSData(contentsOfURL: NSURL(string: songUrl)!)
-                try player = AVAudioPlayer(data: songData!)
+                //TODO: activity indicator for file download here..
+                let songDataTry = NSData(contentsOfURL: NSURL(string: songUrl)!)
+                guard let songData = songDataTry else {
+                    print("could not download song file to play")
+                    cell.setDisabledStateForFailedMixPreviewDownload(true)
+                    return
+                }
+                try player = AVAudioPlayer(data: songData)
                 let session = AVAudioSession.sharedInstance()
                 try session.setCategory(AVAudioSessionCategoryPlayback)
-                player?.play()
+                if let player = player {
+                    if player.playing { player.stop() }
+                    player.play()
+                }
+                cell.setReadyToPlayUIState(false)
             } catch let playerErr as NSError {
                 print("couldn't create player to play the mix: \(playerErr)")
+                cell.setDisabledStateForFailedMixPreviewDownload(true)
             }
         }
     }
@@ -174,6 +189,7 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
         if let player = player {
             player.stop()
         }
+        cell.setReadyToPlayUIState(true)
     }
     
     func checkIfSongExists(songInfo: SongMixLite) -> Bool {
@@ -230,5 +246,10 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
         let song = SongMix(songInfo: song, context: sharedContext)
         song.artist = user
         CoreDataStackManager.sharedInstance.saveContext()
+    }
+}
+extension SearchCommunityViewController: AVAudioPlayerDelegate {
+    func audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully flag: Bool) {
+        
     }
 }

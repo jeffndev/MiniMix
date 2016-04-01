@@ -9,8 +9,11 @@
 import UIKit
 
 class SearchSongsCell: UITableViewCell {
-    @IBOutlet weak var displayLabel: UILabel!
     @IBOutlet weak var playButton: UIButton!
+    @IBOutlet weak var stopButton: UIButton!
+    @IBOutlet weak var songArtistLabel: UILabel!
+    @IBOutlet weak var songNameLabel: UILabel!
+    @IBOutlet weak var genreLabel: UILabel!
     
     var delegate: SongSearchPlaybackDelegate?
     var songInfo: SongMixLite?
@@ -21,10 +24,27 @@ class SearchSongsCell: UITableViewCell {
         }
         delegate.playSong(self, song: songInfo)
     }
+    @IBAction func stopPlay() {
+        guard let delegate = delegate, let songInfo = songInfo else {
+            return
+        }
+        delegate.stopSong(self, song: songInfo)
+    }
+    
     @IBAction func downloadSong() {
         guard let delegate = delegate, let songInfo = songInfo else {
             return
         }
         delegate.downloadSong(self, song: songInfo)
+    }
+    
+    func setDisabledStateForFailedMixPreviewDownload(doDisable: Bool) {
+        self.contentView.alpha = doDisable ?  0.3 : 1.0
+    }
+    
+    func setReadyToPlayUIState(ready: Bool) {
+        self.playButton.hidden = !ready
+        self.stopButton.hidden = ready
+        self.playButton.enabled = ready
     }
 }

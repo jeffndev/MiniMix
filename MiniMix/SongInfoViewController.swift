@@ -107,7 +107,6 @@ class SongInfoViewController: UIViewController {
     */
 
     @IBAction func exitModal(sender: UIBarButtonItem) {
-        //TODO: save data
         if let song = song {
             song.name = songNameTextField.text!
             song.genre = SongMix.genres[picker.selectedRowInComponent(0)]
@@ -118,20 +117,22 @@ class SongInfoViewController: UIViewController {
             //WARNING: TODO: this maybe would be better in a delegate back to the SongList controller to do this..
             CoreDataStackManager.sharedInstance.saveContext()
             //send off changes to the cloud, too...
-            let api = MiniMixCommunityAPI()
-            api.verifyAuthTokenOrSignin(song.artist!.email, password: song.artist!.servicePassword) { success, message, error in
-                guard success else {
-                    return
-                }
-                api.updateSongInfo(song) { success, jsonData, message, error in
-                    if !success {
-                        print("could not update the song information in MiniMix Cloud")
+            if song.wasUploaded {
+                let api = MiniMixCommunityAPI()
+                api.verifyAuthTokenOrSignin(song.artist!.email, password: song.artist!.servicePassword) { success, message, error in
+                    guard success else {
+                        return
+                    }
+                    api.updateSongInfo(song) { success, jsonData, message, error in
+                        if !success {
+                            print("could not update the song information in MiniMix Cloud")
+                        }
                     }
                 }
             }
+        }
         //
         self.dismissViewControllerAnimated(true, completion: nil)
-        }
     }
 }
 

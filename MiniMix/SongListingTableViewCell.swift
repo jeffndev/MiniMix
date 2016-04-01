@@ -44,7 +44,7 @@ class SongListingTableViewCell: UITableViewCell {
         delegate.syncSongWithCloud(self, song: song)
     }
     func setReadyToPlayUIState(ready: Bool) {
-        print(ready)
+        //TODO: remove this dispatch..that should be handled by the code that calls it higher in the stack
         dispatch_async(dispatch_get_main_queue()) {
             self.playButton.hidden = !ready
             self.stopButton.hidden = ready
@@ -52,7 +52,6 @@ class SongListingTableViewCell: UITableViewCell {
         }
     }
     func setSyncWarningState(shouldSync: Bool) {
-        //TODO:
         if let syncButton = syncButton {
             syncButton.hidden = !shouldSync
         }

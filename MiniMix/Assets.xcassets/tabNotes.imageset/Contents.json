@@ -2,17 +2,15 @@
   "images" : [
     {
       "idiom" : "universal",
-      "filename" : "image-1.png",
       "scale" : "1x"
     },
     {
       "idiom" : "universal",
-      "filename" : "image-2.png",
+      "filename" : "Musical Notes-48.png",
       "scale" : "2x"
     },
     {
       "idiom" : "universal",
-      "filename" : "image.png",
       "scale" : "3x"
     }
   ],

@@ -20,7 +20,8 @@ protocol TrackControllerDelegate {
     func eraseTrackRecording(track: AudioTrack, completion: (success: Bool)->Void)
 }
 protocol MasterPlaybackControllerDelegate {
-    func playMix()
+    func playMix(cell: MasterTableViewCell)
+    func stopMixPlayback(cell: MasterTableViewCell)
 }
 
 class SongMixerViewController: UITableViewController {
@@ -37,7 +38,6 @@ class SongMixerViewController: UITableViewController {
         }
     }
     var dataIsDirty = false
-    //var mixTracks = [AudioTrack]()
     var audioRecorder: AVAudioRecorder!
     var currentRecordingTrackRef: AudioTrack? //WARNING: I don't like these..
     var currentRecordingCell: TrackTableViewCell? //    got to make sure this is safe: using for Progess updates And StopRecord notify
@@ -53,7 +53,7 @@ class SongMixerViewController: UITableViewController {
         do {
             try tracksFetchedResultsControllerForSong.performFetch()
         } catch {
-            //TODO: do the appropriate thing
+            abort()
         }
         tracksFetchedResultsControllerForSong.delegate = self
         
@@ -163,7 +163,7 @@ class SongMixerViewController: UITableViewController {
         }
     }
     override func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return section == MASTER_SECTION ? "MASTER TRACK" : "MIX TRACKS"
+        return section == MASTER_SECTION ? "Play the Full Mix" : "Record Your Tracks"
     }
     override func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
         return indexPath.section == MASTER_SECTION ? 116 : 136
@@ -279,6 +279,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         }
         //get ready to record!!
         let recordSettings = [String: AnyObject]()
+        // TODO: look into finer control of file and audio formats..deeper dive needed, though
 //            AVFormatIDKey: NSNumber(unsignedInt:kAudioFormatAppleLossless),
 //            AVEncoderAudioQualityKey : AVAudioQuality.Min.rawValue,
 //            AVEncoderBitRateKey : 320000,
@@ -287,6 +288,7 @@ extension SongMixerViewController: TrackControllerDelegate {
 //        ]
         do {
             audioRecorder = try AVAudioRecorder(URL: AudioCache.trackPath(track, parentSong: song!), settings: recordSettings)
+            audioRecorder.delegate = self
         } catch let error as NSError {
             currentRecordingTrackRef = nil
             print("record error: \(error.localizedDescription)")
@@ -360,17 +362,18 @@ extension SongMixerViewController: TrackControllerDelegate {
         completion(success: true)
     }
     func eraseTrackRecording(track: AudioTrack, completion: (success: Bool) -> Void) {
-        do {
-            try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: song).path!)
-        } catch {}
-        
-        dispatch_async(dispatch_get_main_queue()) {
-            track.hasRecordedFile = false
-            track.lengthSeconds = 0.0
-            CoreDataStackManager.sharedInstance.saveContext()
-        }
-        dataIsDirty = true
-        completion(success: true)
+        //EMPTY: not liking this feature..just DELETE the track will do this and wont confuse user
+//        do {
+//            try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: song).path!)
+//        } catch {}
+//        
+//        dispatch_async(dispatch_get_main_queue()) {
+//            track.hasRecordedFile = false
+//            track.lengthSeconds = 0.0
+//            CoreDataStackManager.sharedInstance.saveContext()
+//        }
+//        dataIsDirty = true
+//        completion(success: true)
     }
     func stopTrackPlayback(track: AudioTrack) {
         if let player = players.filter( { $0.url! == AudioCache.trackPath(track, parentSong: song!) } ).first {
@@ -417,12 +420,11 @@ extension SongMixerViewController: TrackControllerDelegate {
     
 }
 extension SongMixerViewController: MasterPlaybackControllerDelegate {
-    func playMix() {
-        print("..playing the mix..")
-        playMixNaiveImplementation()
+    func playMix(cell: MasterTableViewCell) {
+        playMixImplementation(cell)
     }
     
-    func playMixNaiveImplementation() {
+    func playMixImplementation(cell: MasterTableViewCell) {
         players.removeAll()
         var path: NSURL
         for track in song.tracks {
@@ -430,6 +432,7 @@ extension SongMixerViewController: MasterPlaybackControllerDelegate {
                 path = AudioCache.trackPath(track, parentSong: song!)
                 let player = try AVAudioPlayer(contentsOfURL: path)
                 player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
+                player.delegate = self
                 players.append(player)
             } catch let error as NSError {
                 print("could not create audio player for audio file at \(path.path!)\n  \(error.localizedDescription)")
@@ -438,17 +441,16 @@ extension SongMixerViewController: MasterPlaybackControllerDelegate {
         let session = AVAudioSession.sharedInstance()
         try! session.setCategory(AVAudioSessionCategoryPlayback)
         for player in players {
-            player.play() //actually, using playAtTime(...) might help in synchronization here...
+            player.play()
         }
+        cell.setIsReadyState(isReadyToPlay: false)
     }
-//    func songDirectory(song: SongMix) -> String {
-//        return applicationDocumentsDirectory.URLByAppendingPathComponent(song.id.UUIDString).path!
-//    }
-//    func trackPath(track: AudioTrack, parentSong song: SongMix) -> NSURL {
-//        //let pathComponents = [applicationDocumentsDirectory.path!, song.id.UUIDString, track.name]
-//        let pathComponents = [songDirectory(song), "\(track.id.UUIDString).caf"]
-//        return NSURL.fileURLWithPathComponents(pathComponents)!
-//    }
+    func stopMixPlayback(cell: MasterTableViewCell) {
+        for player in players {
+            player.stop()
+        }
+        cell.setIsReadyState(isReadyToPlay: true)
+    }
 }
 extension SongMixerViewController: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully flag: Bool) {
@@ -457,15 +459,26 @@ extension SongMixerViewController: AVAudioPlayerDelegate {
                 return
             }
         }
-        //TODO: No more players playing, so set the track playback button back to "ready to play" state
-        for row in 0..<tableView.numberOfRowsInSection(TRACKS_SECTION) {
-            if let cell = tableView.cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: TRACKS_SECTION)) as? TrackTableViewCell {
-                cell.setTrackPlayButtonsToReadyToPlayState()
+        for section in 0..<tableView.numberOfSections {
+            for row in 0..<tableView.numberOfRowsInSection(section) {
+                if let cell = tableView.cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: section)) as? TrackTableViewCell {
+                    cell.setTrackPlayButtonsToReadyToPlayState()
+                }
+                if let cell = tableView.cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: section)) as? MasterTableViewCell {
+                    cell.setIsReadyState(isReadyToPlay: true)
+                }
             }
         }
-        //tableView.cellForRowAtIndexPath(<#T##indexPath: NSIndexPath##NSIndexPath#>)
     }
 }
+
+extension SongMixerViewController: AVAudioRecorderDelegate {
+    func audioRecorderBeginInterruption(recorder: AVAudioRecorder) {
+        //TODO: when phone call, etc comes in, recording stops seems to be default behavior.
+        // thats fine, but need to signal the track cell to toggle back to Ready state...
+    }
+}
+
 extension SongMixerViewController: NSFetchedResultsControllerDelegate {
     func controllerWillChangeContent(controller: NSFetchedResultsController) {
         tableView.beginUpdates()
@@ -479,8 +492,6 @@ extension SongMixerViewController: NSFetchedResultsControllerDelegate {
         case .Insert:
             if newIndexPath!.section == TRACKS_SECTION {
                 tableView.insertRowsAtIndexPaths([newIndexPath!], withRowAnimation: .Automatic)
-//                let newIndexPath = NSIndexPath(forRow: trackCount, inSection: TRACKS_SECTION)
-//                tableView.insertRowsAtIndexPaths([newIndexPath], withRowAnimation: .Automatic)
                 let trackCount = tracksFetchedResultsControllerForSong.fetchedObjects!.count
                 navigationItem.rightBarButtonItem?.enabled = (trackCount < MAX_TRACKS)
             }

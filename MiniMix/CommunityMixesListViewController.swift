@@ -19,6 +19,13 @@ class CommunityMixesListViewController: SongListViewController {
     //MARK: Lifecycle overrides...
     override func viewDidLoad() {
         super.viewDidLoad()
+        if !currentUser.socialName.isEmpty {
+            let lbl = UILabel() //  UIBarButtonItem(title: "mix artist: \(currentUser.socialName)", style: .Plain, target: nil, action: nil)
+            lbl.text = "mix artist: \(currentUser.socialName)"
+            lbl.sizeToFit()
+            //lbl.font = ?? TODO:
+            navigationItem.leftBarButtonItem = UIBarButtonItem(customView: lbl)
+        }
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -61,7 +68,7 @@ class CommunityMixesListViewController: SongListViewController {
         super.configureCell(cell, withSongMix: song)
         if let artistNameLbl =  cell.artistName, let artist = song.artist {
             //TODO: gotta figure out, in storyboard where this is going to fit in that cell..its already pretty tight
-            artistNameLbl.text = artist.socialName
+            artistNameLbl.text = "artist: \(artist.socialName)"
         }
         cell.contentView.alpha = song.keepPrivate ? 0.3 : 1.0
     }
@@ -99,7 +106,9 @@ extension CommunityMixesListViewController {
                     CoreDataStackManager.sharedInstance.saveContext()
                 }
                 if !isprivate {
-                    cell.setReadyToPlayUIState(!self.playMixImplementation(song))
+                    let playerIsPlaying = self.playMixImplementation(song)
+                    if !playerIsPlaying { self.currentPlayingCellRef = nil }
+                    cell.setReadyToPlayUIState(!playerIsPlaying)
                 } else {
                     self.currentPlayingCellRef = nil
                     cell.setReadyToPlayUIState(true)
@@ -115,6 +124,7 @@ extension CommunityMixesListViewController {
         players.removeAll()
         if let songUrl = song.mixFileUrl {
             do {
+                //TODO: activity indicator..start
                 let songDataTry = NSData(contentsOfURL: NSURL(string: songUrl)!)
                 guard let songData = songDataTry else {
                     dispatch_async(dispatch_get_main_queue()) {

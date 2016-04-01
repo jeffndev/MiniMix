@@ -10,7 +10,9 @@ import UIKit
 
 class MasterTableViewCell: UITableViewCell {
 
+    @IBOutlet weak var stopButton: UIButton!
     @IBOutlet weak var playButton: UIButton!
+    
     var delegate: MasterPlaybackControllerDelegate?
     
     override func awakeFromNib() {
@@ -28,6 +30,16 @@ class MasterTableViewCell: UITableViewCell {
         guard let delegate = delegate else {
             return
         }
-        delegate.playMix()
+        delegate.playMix(self)
+    }
+    @IBAction func stopPlay() {
+        guard let delegate = delegate else {
+            return
+        }
+        delegate.stopMixPlayback(self)
+    }
+    func setIsReadyState(isReadyToPlay ready: Bool) {
+        playButton.hidden = !ready
+        stopButton.hidden = ready
     }
 }

@@ -99,6 +99,50 @@ class MiniMixCommunityAPI {
         }
         task.resume()
     }
+    
+    func songCloudVersionOutOfDateCheck(song: SongMix, completion: BoolCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/song_version" + escapedParameters(["song_id": song.id])
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "GET"
+        //add headers
+        request.addValue( buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
+        let session = NSURLSession.sharedSession()
+        let task = session.dataTaskWithRequest(request) { data, response, error in
+            guard error == nil else {
+                completion!(success: false, istrue: nil, message: "error recevied from song version check task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, istrue: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch let jsonErr as NSError {
+                print("verify_token http return: \(jsonErr)")
+                completion!(success: false, istrue: nil, message: "song version check failed to return parseable json", error: nil)
+                return
+            }
+            print(parsedResult)
+            guard let jsonDictionary = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, istrue: nil, message: "song version check failed to return parseable json", error: nil)
+                return
+            }
+            guard let songInfo = jsonDictionary["song_info"] as? [String: AnyObject] else {
+                completion!(success: false, istrue: nil, message: "song version check failed to return parseable json", error: nil)
+                return
+            }
+            guard let version = songInfo["version"] as? Int else {
+                completion!(success: false, istrue: nil, message: "song version check failed to return parseable json", error: nil)
+                return
+            }
+            completion!(success: true, istrue: version < song.version, message: nil, error: nil)
+        }
+        task.resume()
+    }
+    
     func checkIfSongIsPrivate(song: SongMix, completion: BoolCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/song_privacy" + escapedParameters(["song_id": song.id])
         let url = NSURL(string: builtUrlString)!
