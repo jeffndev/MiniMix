@@ -126,7 +126,6 @@ class SongListViewController: UIViewController {
         }
     }
     func cloudSyncTask() {
-        //TODO: PROGRESS or ACTIVITY INDICATOR??
         //main purpose is to pull down existing mixes for this user after re-registering
         //step 1.  for each song in the viewed songs, update any versions (UPSYNC)
         let songs = songsFetchedResultsControllerForUser.fetchedObjects as! [SongMix]
@@ -241,7 +240,6 @@ class SongListViewController: UIViewController {
             } else {
                 shareMixFile(song)
             }
-            print("Shareing for song name: \(song.name)")
         }
     }
     func shareMixFile(song: SongMix) {
@@ -343,14 +341,14 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
         let cell = tableView.cellForRowAtIndexPath(indexPath)
         if !currentUser.isRegistered || currentUser.email.isEmpty || currentUser.servicePassword.isEmpty {
             doSignUp() {
-                self.toCloudHandler(song, sender: cell!)
+                self.toCloudHandler(song)
             }
         } else {
-            toCloudHandler(song, sender: cell!)
+            toCloudHandler(song)
         }
     }
     
-    func toCloudHandler(song: SongMix, sender: AnyObject) {
+    func toCloudHandler(song: SongMix) {
         let api = MiniMixCommunityAPI()
         api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
             guard success else {
@@ -369,15 +367,10 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
                 }
                 alert.addAction(savePrivate)
                 dispatch_async(dispatch_get_main_queue()) {
-//                    let popOver = alert.popoverPresentationController
-//                    popOver?.sourceView  = sender as? UIView
-//                    popOver?.sourceRect = (sender as! UIView).bounds
-//                    popOver?.permittedArrowDirections = UIPopoverArrowDirection.Any
-                    
                     alert.popoverPresentationController?.sourceView = self.view
                     alert.popoverPresentationController?.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1.0, 1.0)
-                    alert.view.layoutIfNeeded()
                     self.presentViewController(alert, animated: true, completion: nil)
+                    alert.view.layoutIfNeeded()
                     
                 }
             } else {
@@ -425,10 +418,13 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
 
     func showAlertMsg(title: String?, msg: String, posthandler: (() -> Void)?) {
         if #available(iOS 8.0, *) {
-            let vc = UIAlertController(title: title, message: msg, preferredStyle: .Alert)
-            let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
-            vc.addAction(okAction)
-            presentViewController(vc, animated: true, completion: posthandler)
+            dispatch_async(dispatch_get_main_queue()){
+                let vc = UIAlertController(title: title, message: msg, preferredStyle: .Alert)
+                let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+                vc.addAction(okAction)
+                vc.popoverPresentationController?.sourceView = self.view
+                self.presentViewController(vc, animated: true, completion: posthandler)
+            }
         } else {
             //TODO: Fallback on earlier versions, possible version 2.0 item, support for ios 7
         }

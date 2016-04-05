@@ -25,8 +25,10 @@ class SongMix: NSManagedObject {
         static let PrivacyFlag = "private_flag"
         static let VersionNumber = "version"
     }
-    static let UNCHARACTERIZED_GENRE = "Uncharacterized"
-    static let genres = [ "Country", "Classical", "Rock", "Folk", "Jazz", "Alternative", "Metal", UNCHARACTERIZED_GENRE]
+    static let UNCHARACTERIZED_GENRE = "Unclassifiable"
+    static let genres = ["Alternative", "Blues/R&B", "Children's Music",  "Classical", "Country", "Dance", "Easy Listening",
+                        "Electronic", "Folk", "House", "Industrial", "Techno", "Trance", "Hip Hop/Rap", "Holiday", "Jazz",
+                        "New Age", "Pop", "Religious", "Rock", "Soundtrack", UNCHARACTERIZED_GENRE, "World"  ]
     
     @NSManaged var id: String //NSUUID
     @NSManaged var name: String

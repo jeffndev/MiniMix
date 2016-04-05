@@ -73,10 +73,12 @@ class SearchCommunityViewController: UIViewController {
     
     func showAlertMsg(title: String?, msg: String) {
         if #available(iOS 8.0, *) {
-            let vc = UIAlertController(title: title, message: msg, preferredStyle: .Alert)
-            let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
-            vc.addAction(okAction)
-            presentViewController(vc, animated: true, completion: nil)
+            dispatch_async(dispatch_get_main_queue()) {
+                let vc = UIAlertController(title: title, message: msg, preferredStyle: .Alert)
+                let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+                vc.addAction(okAction)
+                self.presentViewController(vc, animated: true, completion: nil)
+            }
         } else {
             // Fallback on earlier versions
         }

@@ -46,11 +46,11 @@ class SongListingTableViewCell: UITableViewCell {
         delegate.syncSongWithCloud(self, song: song)
     }
     func setReadyToPlayUIState(ready: Bool) {
-        dispatch_async(dispatch_get_main_queue()) {
-            self.playButton.hidden = !ready
-            self.stopButton.hidden = ready
-            self.playButton.enabled = ready
-        }
+        //dispatch_async(dispatch_get_main_queue()) {
+            playButton.hidden = !ready
+            stopButton.hidden = ready
+            playButton.enabled = ready
+        //}
     }
     func setSyncWarningState(shouldSync: Bool) {
         if let syncButton = syncButton {

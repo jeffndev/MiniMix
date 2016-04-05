@@ -29,7 +29,7 @@ class MiniMixCommunityAPI {
     }
     let API_AUTH_NAME = "MixPublicUser"
     let API_AUTH_PASSWORD = "7nGU86iI5FCKZJ1Az0R2E7CGZOx2E1A6lJ9i7aD7UPkXDPE3OetAGzHE75T118Ri"
-    let API_BASE_URL_SECURE = "http://jnhomesvrnn:3000/api"//"https://minimixsocial.herokuapp.com/api" //
+    let API_BASE_URL_SECURE = "https://minimixsocial.herokuapp.com/api" //"http://jnhomesvrnn:3000/api"//
 
     let httpRequestBoundary = "---------------------------14737809831466499882746641449"
     static let JSON_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"

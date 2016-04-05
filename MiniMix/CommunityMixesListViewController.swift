@@ -86,7 +86,9 @@ extension CommunityMixesListViewController {
         api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
             guard success else {
                 self.currentPlayingCellRef = nil
-                cell.setReadyToPlayUIState(true)
+                dispatch_async(dispatch_get_main_queue()) {
+                    cell.setReadyToPlayUIState(true)
+                }
                 let msg = message ?? "Could not authenticate with the server"
                 self.showAlertMsg("Player Failure", msg: msg, posthandler: nil)
                 return
@@ -94,7 +96,9 @@ extension CommunityMixesListViewController {
             api.checkIfSongIsPrivate(song) { success, istrue, message, error in
                 guard success, let isprivate = istrue else {
                     self.currentPlayingCellRef = nil
-                    cell.setReadyToPlayUIState(true)
+                    dispatch_async(dispatch_get_main_queue()) {
+                        cell.setReadyToPlayUIState(true)
+                    }
                     return
                 }
                 dispatch_async(dispatch_get_main_queue()){
@@ -104,11 +108,13 @@ extension CommunityMixesListViewController {
                 if !isprivate {
                     let playerIsPlaying = self.playMixImplementation(song)
                     if !playerIsPlaying { self.currentPlayingCellRef = nil }
-                    cell.setReadyToPlayUIState(!playerIsPlaying)
+                    dispatch_async(dispatch_get_main_queue()) {
+                        cell.setReadyToPlayUIState(!playerIsPlaying)
+                    }
                 } else {
                     self.currentPlayingCellRef = nil
-                    cell.setReadyToPlayUIState(true)
                     dispatch_async(dispatch_get_main_queue()){
+                        cell.setReadyToPlayUIState(true)
                         self.showAlertMsg("Private Song", msg: "This song has been made private to the community by the artist.", posthandler: nil)
                     }
                 }
