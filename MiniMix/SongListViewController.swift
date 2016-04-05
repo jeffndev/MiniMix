@@ -50,7 +50,6 @@ class SongListViewController: UIViewController {
             CoreDataStackManager.sharedInstance.saveContext()
         }
         print("user name: \(currentUser.socialName)")
-        //if !currentUser.socialName.isEmpty { self.title = "Mini Mix for \(currentUser.socialName)" }
         //SONGS for User
         if songsFetchedResultsControllerForUser == nil {
             initializeSongFetchResultsController()
@@ -113,7 +112,7 @@ class SongListViewController: UIViewController {
     }
     @IBAction func cloudReSyncAction() {
         guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
-            doSignUp()
+            doSignUp(nil)
             return
         }
         let api = MiniMixCommunityAPI()
@@ -261,6 +260,7 @@ class SongListViewController: UIViewController {
             } else {
                 // Fallback on earlier versions
             }
+            shareViewController.popoverPresentationController?.sourceView = self.view
             self.presentViewController(shareViewController, animated: true, completion: nil)
         }
     }
@@ -281,13 +281,11 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     }
     func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         //THE NAME OF THE GENRE
-        //return SongMix.genres[section]
         let targetSection = songsFetchedResultsControllerForUser.sections![section]
         return targetSection.name
 
     }
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
-        //return SongMix.genres.count
         return songsFetchedResultsControllerForUser.sections!.count
     }
     //MARK: Delegate protocols
@@ -307,7 +305,7 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     
     @available(iOS 8.0, *)
     func tableView(tableView: UITableView, editActionsForRowAtIndexPath indexPath: NSIndexPath) -> [UITableViewRowAction]? {
-        //three: Delete, ReMix, Edit, Share
+        //four: Delete, ReMix, Edit, Share
         let delete = UITableViewRowAction(style: .Destructive, title: "Delete") { action, idxPath in
             self.deleteAction(idxPath)
         }
@@ -333,18 +331,26 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
         CoreDataStackManager.sharedInstance.saveContext()
     }
     
-    func doSignUp() {
+    func doSignUp(postHandler: (() -> Void)?) {
         let signInViewController = storyboard?.instantiateViewControllerWithIdentifier("CommunitySignInViewController") as! CommunityShareSignInViewController
+        signInViewController.postSigninCompletion = postHandler
         presentViewController(signInViewController, animated: true, completion: nil)
     }
     
+    
     func toCloudAction(indexPath: NSIndexPath) {
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
-        
-        guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
-            doSignUp()
-            return
+        let cell = tableView.cellForRowAtIndexPath(indexPath)
+        if !currentUser.isRegistered || currentUser.email.isEmpty || currentUser.servicePassword.isEmpty {
+            doSignUp() {
+                self.toCloudHandler(song, sender: cell!)
+            }
+        } else {
+            toCloudHandler(song, sender: cell!)
         }
+    }
+    
+    func toCloudHandler(song: SongMix, sender: AnyObject) {
         let api = MiniMixCommunityAPI()
         api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
             guard success else {
@@ -353,7 +359,7 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
                 return
             }
             if #available(iOS 8.0, *) {
-                let alert = UIAlertController(title: "Share to Cloud", message: nil, preferredStyle: .ActionSheet) //maybe .Alert style better??
+                let alert = UIAlertController(title: "Share to Cloud", message: nil, preferredStyle: .Alert) //maybe .Alert style better??
                 let shareWithCommunity = UIAlertAction(title: "Share with Community", style: .Default) { action in
                     self.cloudUploadTasks(song, keepPrivate: false)
                 }
@@ -363,22 +369,20 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
                 }
                 alert.addAction(savePrivate)
                 dispatch_async(dispatch_get_main_queue()) {
+//                    let popOver = alert.popoverPresentationController
+//                    popOver?.sourceView  = sender as? UIView
+//                    popOver?.sourceRect = (sender as! UIView).bounds
+//                    popOver?.permittedArrowDirections = UIPopoverArrowDirection.Any
+                    
+                    alert.popoverPresentationController?.sourceView = self.view
+                    alert.popoverPresentationController?.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1.0, 1.0)
+                    alert.view.layoutIfNeeded()
                     self.presentViewController(alert, animated: true, completion: nil)
+                    
                 }
             } else {
                 //TODO: Fallback on earlier versions
             }
-        }
-    }
-        
-    func showAlertMsg(title: String?, msg: String, posthandler: (() -> Void)?) {
-        if #available(iOS 8.0, *) {
-            let vc = UIAlertController(title: title, message: msg, preferredStyle: .Alert)
-            let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
-            vc.addAction(okAction)
-            presentViewController(vc, animated: true, completion: posthandler)
-        } else {
-            //TODO: Fallback on earlier versions
         }
     }
     
@@ -418,108 +422,17 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
             //END HANDLE SONG UPLOAD JSON RESPONSE.......
         }
     }
-    
-//    func cloudUploadActivity(song: SongMix, keepPrivate: Bool) {
-//        //TODO: this function is a bear...need to clean it up...
-//        guard let currentUser = currentUser else {
-//            print("nil current user...")
-//            return
-//        }
-//        let userEmail = currentUser.email
-//        let userPwd = currentUser.servicePassword
-//        let userMoniker = currentUser.socialName
-//        
-//        if !currentUser.isRegistered || currentUser.servicePassword.isEmpty || currentUser.email.isEmpty {
-//            let signInViewController = storyboard?.instantiateViewControllerWithIdentifier("CommunitySignInViewController") as! CommunityShareSignInViewController
-//            presentViewController(signInViewController, animated: true) {
-//                if self.currentUser.isRegistered {
-//                    let api = MiniMixCommunityAPI()
-//                    api.uploadSong(userEmail, password: userPwd, keepPrivate: keepPrivate, song: song) { success, jsonData, message, error in
-//                        //TODO: probably want to indicate the "uploaded_to_cloud", the song and tracks s3 urls and id's and save locally..
-//                        if !success || jsonData == nil {
-//                            dispatch_async(dispatch_get_main_queue()) {
-//                                self.showAlertMsg("Cloud Upload", msg: "Song failed to upload, please try again")
-//                            }
-//                            return
-//                        }
-//                        dispatch_async(dispatch_get_main_queue()) {
-//                            if let remoteUrl = jsonData![SongMix.Keys.MixFileRemoteUrl] as? String {
-//                                song.mixFileUrl = remoteUrl
-//                            }
-//                            if let s3Id = jsonData![SongMix.Keys.S3RandomId] as? String {
-//                                song.s3RandomId = s3Id
-//                            }
-//                            CoreDataStackManager.sharedInstance.saveContext()
-//                        }
-//                        for track in song.tracks {
-//                            if !track.hasRecordedFile { continue }//WARNING: repeated code...see below
-//                            api.uploadTrackFile(userEmail, password: userPwd, track: track) { success, jsonData, message, error in
-//                                if success && jsonData != nil{
-//                                    //TODO: save the track url and s3 id to the db..
-//                                    dispatch_async(dispatch_get_main_queue()) {
-//                                        if let remoteTrackUrl = jsonData![AudioTrack.Keys.TrackFileRemoteUrl] as? String {
-//                                            track.trackFileUrl = remoteTrackUrl
-//                                        }
-//                                        if let s3Id = jsonData![AudioTrack.Keys.S3RandomId] as? String {
-//                                            track.s3RandomId = s3Id
-//                                        }
-//                                        CoreDataStackManager.sharedInstance.saveContext()
-//                                    }
-//                                }
-//
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    //TODO: fail somehow..gotta let user know
-//                }
-//            }
-//        } else {
-//            let api = MiniMixCommunityAPI()
-//            api.signin(userEmail, password: userPwd, publicName: userMoniker) { success, message, error in
-//                if(success) {
-//                    //let inner_api = MiniMixCommunityAPI()
-//                    api.uploadSong(userEmail, password: userPwd, keepPrivate: keepPrivate, song: song) { success, jsonData, message, error in
-//                         //WARNING: repeated code...see above
-//                        if !success || jsonData == nil {
-//                            dispatch_async(dispatch_get_main_queue()) {
-//                                self.showAlertMsg("Cloud Upload", msg: "Song failed to upload, please try again")
-//                            }
-//                            return
-//                        }
-//                        dispatch_async(dispatch_get_main_queue()) {
-//                            if let remoteUrl = jsonData![SongMix.Keys.MixFileRemoteUrl] as? String {
-//                                song.mixFileUrl = remoteUrl
-//                            }
-//                            if let s3Id = jsonData![SongMix.Keys.S3RandomId] as? String {
-//                                song.s3RandomId = s3Id
-//                            }
-//                            CoreDataStackManager.sharedInstance.saveContext()
-//                        }
-//                        for track in song.tracks {
-//                            if !track.hasRecordedFile { continue }
-//                            api.uploadTrackFile(userEmail, password: userPwd, track: track) { success, jsonData, message, error in
-//                                if success && jsonData != nil{
-//                                    //TODO: save the track url and s3 id to the db..
-//                                    dispatch_async(dispatch_get_main_queue()) {
-//                                        if let remoteTrackUrl = jsonData![AudioTrack.Keys.TrackFileRemoteUrl] as? String {
-//                                            track.trackFileUrl = remoteTrackUrl
-//                                        }
-//                                        if let s3Id = jsonData![AudioTrack.Keys.S3RandomId] as? String {
-//                                            track.s3RandomId = s3Id
-//                                        }
-//                                        CoreDataStackManager.sharedInstance.saveContext()
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    //have to figure out which kinds of errors...if need to signup again or something would need the signin modal, otherwise, just tell user sorry, try again
-//                }
-//            }
-//        }
-//    }
+
+    func showAlertMsg(title: String?, msg: String, posthandler: (() -> Void)?) {
+        if #available(iOS 8.0, *) {
+            let vc = UIAlertController(title: title, message: msg, preferredStyle: .Alert)
+            let okAction = UIAlertAction(title: "OK", style: .Default, handler: nil)
+            vc.addAction(okAction)
+            presentViewController(vc, animated: true, completion: posthandler)
+        } else {
+            //TODO: Fallback on earlier versions, possible version 2.0 item, support for ios 7
+        }
+    }
     
     func remixAction(indexPath: NSIndexPath) {
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
@@ -583,7 +496,7 @@ extension SongListViewController: SongPlaybackDelegate {
     }
     func syncSongWithCloud(cell: SongListingTableViewCell, song: SongMix) {
         guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
-            doSignUp()
+            doSignUp(nil)
             return
         }
         let api = MiniMixCommunityAPI()
@@ -600,6 +513,10 @@ extension SongListViewController: SongPlaybackDelegate {
 //MARK: AVAudioPlayerDelegate
 extension SongListViewController: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully flag: Bool) {
+        for player in players {
+            //only after the last player is done, since this is playing multiple tracks, which could be different durations..
+            if player.playing { return }
+        }
         //have to signal to the cell that the
         if let cell = currentPlayingCellRef {
             cell.setReadyToPlayUIState(true)
@@ -662,8 +579,9 @@ extension SongListViewController: NSFetchedResultsControllerDelegate {
         cell.songStarsRankLable.text = song.rating == nil ? "" : String(Int(song.rating!))
         cell.song = song
         cell.delegate = self
+        cell.setUploadedState(song.wasUploaded)
         
-        if let artist = song.artist where artist.isMe {
+        if let artist = song.artist where artist.isMe && song.wasUploaded {
             //Check if YOUR song has changed (higher version), should Sync to Cloud...but only for YOUR songs
             let api = MiniMixCommunityAPI()
             api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in

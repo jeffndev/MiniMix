@@ -18,15 +18,12 @@ struct SongMixLite {
     var songDescription: String?
     var lengthInSeconds: NSNumber? //Double?
     var rating: NSNumber? //Float?
-    //var lastEditDate: NSDate?
     var s3RandomId: String?
     var mixFileUrl: String?
     var keepPrivate: Bool
     var userDisplayName: String
     var version: Int
-    //relationships
-    //var tracks: [AudioTrack]
-    //var artist: User?
+    
     
     var wasUploaded: Bool {
         return mixFileUrl != nil
@@ -38,15 +35,15 @@ struct SongMixLite {
         //Date from string...
         let strCreateDate = dictionary[SongMix.Keys.CreatedAt] as! String
         let dateFormater = NSDateFormatter()
-        dateFormater.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        dateFormater.dateFormat = MiniMixCommunityAPI.JSON_DATE_FORMAT_STRING //  "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         createDate = dateFormater.dateFromString(strCreateDate) ?? NSDate()
         
         genre = dictionary[SongMix.Keys.Genre] as! String
-        userInitialized = true //dictionary[SongMix.Keys.UserDidSetSongInfo] as! Bool
+        userInitialized = true
         songDescription = dictionary[SongMix.Keys.SongDescription] as? String
-        lengthInSeconds = 0//dictionary[SongMix.Keys.SongDurationSeconds] as? Double
+        lengthInSeconds = 0
         rating = dictionary[SongMix.Keys.SelfRating] as? Float
-        //lastEditDate = dictionary[SongMix.Keys.UpdatedAt] as? NSDate
+
         mixFileUrl = dictionary[SongMix.Keys.MixFileRemoteUrl] as? String
         s3RandomId = dictionary[SongMix.Keys.S3RandomId] as? String
         keepPrivate = (dictionary[SongMix.Keys.PrivacyFlag] as? Bool) ?? false

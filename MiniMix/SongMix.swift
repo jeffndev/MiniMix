@@ -40,7 +40,7 @@ class SongMix: NSManagedObject {
     @NSManaged var s3RandomId: String?
     @NSManaged var mixFileUrl: String?
     @NSManaged var keepPrivate: Bool
-    @NSManaged var version: Int
+    @NSManaged var version: NSNumber
     //relationships
     @NSManaged var tracks: [AudioTrack]
     @NSManaged var artist: User?
@@ -73,7 +73,7 @@ class SongMix: NSManagedObject {
         }
         
         genre = dictionary[SongMix.Keys.Genre] as! String
-        userInitialized = true //dictionary[SongMix.Keys.UserDidSetSongInfo] as! Bool
+        userInitialized = true
         songDescription = dictionary[SongMix.Keys.SongDescription] as? String
         lengthInSeconds = dictionary[SongMix.Keys.SongDurationSeconds] as? Double
         rating = dictionary[SongMix.Keys.SelfRating] as? Float

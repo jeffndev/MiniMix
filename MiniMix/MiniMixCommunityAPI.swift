@@ -16,7 +16,7 @@ class MiniMixCommunityAPI {
     
     struct ErrorCodes {
         static let NETWORK_ERROR = 400
-        static let API_ERROR = 100 //TODO: decide on proper list of error codes to send along, add to this
+        static let API_ERROR = 100
     }
     enum HTTPRequestAuthType {
         case HTTPBasicAuth
@@ -29,13 +29,12 @@ class MiniMixCommunityAPI {
     }
     let API_AUTH_NAME = "MixPublicUser"
     let API_AUTH_PASSWORD = "7nGU86iI5FCKZJ1Az0R2E7CGZOx2E1A6lJ9i7aD7UPkXDPE3OetAGzHE75T118Ri"
-    let API_BASE_URL_SECURE = "http://jnhomesvrnn:3000/api"
+    let API_BASE_URL_SECURE = "http://jnhomesvrnn:3000/api"//"https://minimixsocial.herokuapp.com/api" //
 
     let httpRequestBoundary = "---------------------------14737809831466499882746641449"
     static let JSON_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
     
-    //private let DEFAULTS_KEY_LOGGED_IN_FLAG = "MIX_API_LOGGED_IN_FLAG"
-    private let DEFAULTS_KEY_API_TOKEN = "MIX_API_LOGGIN_TOKEN" //TODO: maybe should put these in keychain instead of user defaults
+    private let DEFAULTS_KEY_API_TOKEN = "MIX_API_LOGGIN_TOKEN" //TODO: maybe should put these in keychain instead of user defaults, version 2.0
     private let DEFAULTS_KEY_API_EXPIRY = "MIX_API_LOGIN_EXPIRY"
     
     //MARK: PUBLIC API interface..
@@ -80,16 +79,14 @@ class MiniMixCommunityAPI {
                 if let apiStatus = jsonDictionary["status"] as? Int {
                     if apiStatus < 200 || apiStatus >= 300 {
                         completion!(success: false, jsonData: nil, message: jsonDictionary["message"] as? String, error: NSError(domain: "api error", code: MiniMixCommunityAPI.ErrorCodes.API_ERROR, userInfo: nil))
+                        return
                     }
                 }
             }
-            guard let receivedDisplayName = jsonDictionary[User.Keys.SocialName] as? String,
+            guard let receivedDisplayName = jsonDictionary[User.Keys.SocialName] as? String where !receivedDisplayName.isEmpty,
                 let receivedEmailConfirmation = jsonDictionary[User.Keys.Email] as? String where receivedEmailConfirmation == email  else {
                 completion!(success: false, jsonData: nil, message: "User was not succesfully registered with MiniMix, please try again later", error: nil)
                 return
-            }
-            if receivedDisplayName != publicName {
-                //TODO: HANDLE situation where this is a re-registration...handle it further up, just pass the json back...
             }
             guard self.handleLocalAuthTokenData(jsonDictionary) else {
                 completion!(success: false, jsonData: nil, message: "Could not find authorization token after signup", error: nil)
@@ -138,7 +135,7 @@ class MiniMixCommunityAPI {
                 completion!(success: false, istrue: nil, message: "song version check failed to return parseable json", error: nil)
                 return
             }
-            completion!(success: true, istrue: version < song.version, message: nil, error: nil)
+            completion!(success: true, istrue: version < Int(song.version), message: nil, error: nil)
         }
         task.resume()
     }
@@ -199,10 +196,6 @@ class MiniMixCommunityAPI {
         //add body
         let session = NSURLSession.sharedSession()
         let task = session.dataTaskWithRequest(request) { data, response, error in
-          
-            //if no user identified, complete with failure.
-            
-            //just need to find the authtoken_expiry in the json then compare to now (also, send it off to save locally too...)
             guard error == nil else {
                 completion!(success: false, istrue: nil, message: "error recevied from token verify task", error: error)
                 return
@@ -281,11 +274,10 @@ class MiniMixCommunityAPI {
             do {
                 parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
             } catch let jsonErr as NSError {
-                print("ooops signin failed on http return: \(jsonErr)")
-                completion!(success: false, message: "signup failed to return parseable json", error: nil)
+                completion!(success: false, message: "signup failed to return parseable json)", error: jsonErr)
                 return
             }
-            print(parsedResult)
+            //print(parsedResult)
             guard let jsonDictionary = parsedResult as? [String: AnyObject] else {
                 completion!(success: false, message: "signup failed to return parseable json", error: nil)
                 return
@@ -325,19 +317,34 @@ class MiniMixCommunityAPI {
                 completion!(success: false, jsonData: nil, message: "song update failed to return parseable json", error: nil)
                 return
             }
-            print("uploadSongMeta returned json:")
-            print(parsedResult)
+            //print("uploadSongMeta returned json:")
+            //print(parsedResult)
             guard let parsedJson = parsedResult as? [String: AnyObject] else {
                 completion!(success: false, jsonData: nil, message: "song update failed to return parseable json", error: nil)
                 return
             }
-            //TODO: check the json response here for the song info...then do the file upload..
             completion!(success: true, jsonData: parsedJson,  message: nil, error: nil)
         }
         songTask.resume()
     }
     
     func uploadSong(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
+        //first check that the song mix actually happened...
+        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
+            AudioHelpers.createSongMixFile(song) { success in
+                if !success {
+                    completion!(success: success, jsonData: nil, message: "Unable to create track mix file", error: nil)
+                } else {
+                    self.uploadSongAfterFileCheck(keepPrivate, song: song, completion: completion)
+                }
+            }
+        } else {
+            uploadSongAfterFileCheck(keepPrivate, song: song, completion: completion)
+        }
+
+        
+    }
+    func uploadSongAfterFileCheck(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
         uploadSongInfo(keepPrivate, song: song) { success, json, message, error in
             if !success {
                 completion!(success: success, jsonData: json, message: message, error: error)
@@ -375,12 +382,11 @@ class MiniMixCommunityAPI {
             do {
                 parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
             } catch let jsonErr as NSError {
-                print("ooops signin failed on http return: \(jsonErr)")
-                completion!(success: false, jsonData: nil, message: "search failed to return parseable json", error: nil)
+                completion!(success: false, jsonData: nil, message: "search failed to return parseable json", error: jsonErr)
                 return
             }
-            print("uploadSongMeta returned json:")
-            print(parsedResult)
+            //print("uploadSongMeta returned json:")
+            //print(parsedResult)
             if let jsonObject = parsedResult as? [String: AnyObject] {
                 if let status = jsonObject["status"] as? Int where status > 299 || status < 200 {
                     let msg = (jsonObject["message"] as? String) ?? ""
@@ -419,8 +425,8 @@ class MiniMixCommunityAPI {
             var parsedResult: AnyObject!
             do {
                 parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
-            } catch _ as NSError {
-                completion!(success: false, jsonData: nil, message: "get my uploaded songs failed to return parseable json", error: nil)
+            } catch let jsonError as NSError {
+                completion!(success: false, jsonData: nil, message: "get my uploaded songs failed to return parseable json", error: jsonError)
                 return
             }
             print("getMySongs returned json:")
@@ -441,23 +447,8 @@ class MiniMixCommunityAPI {
         task.resume()
     }
     
-//    func downloadCommnuitySongFile(email: String, songInfo:, completion: DataArrayCompletionHander) {
-//        //NOTE: this is not necessary, we already have the info to create and save a SongMix object,
-//        //      they should just play the song from the remote mix_file_url
-//        //     if, in future, I add a feature to truly DOWNLOAD the file, it will just go directly to the AWS url, not need for the api call
-//    }
-    
     //MARK: song upload PIECES...broken down so not one HUGE http request..
     func uploadSongInfo(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
-        //first check that the song mix actually happened...TODO: maybe this is more appropriate in the view controller or higher up..the file check
-        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
-            AudioHelpers.createSongMixFile(song) { success in
-                if !success {
-                    completion!(success: success, jsonData: nil, message: "Unable to create track mix file", error: nil)
-                    return
-                }
-            }
-        }
         let builtUrlString = "\(API_BASE_URL_SECURE)/upload_song"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -482,8 +473,7 @@ class MiniMixCommunityAPI {
             do {
                 parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
             } catch let jsonErr as NSError {
-                print("\(jsonErr)")
-                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
+                completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: jsonErr)
                 return
             }
             print("uploadSongMeta returned json:")
@@ -492,7 +482,6 @@ class MiniMixCommunityAPI {
                 completion!(success: false, jsonData: nil, message: "signup failed to return parseable json", error: nil)
                 return
             }
-            //TODO: check the json response here for the song info...then do the file upload..
             completion!(success: true, jsonData: parsedJson,  message: nil, error: nil)
         }
         songTask.resume()
@@ -532,7 +521,6 @@ class MiniMixCommunityAPI {
                 completion!(success: false, jsonData: nil, message: "upload_song_file api failed to return parseable json", error: nil)
                 return
             }
-            //TODO: check the json response here for the song info...then do the file upload..
             completion!(success: true, jsonData: parsedJson, message: nil, error: nil)
         }
         songFileTask.resume()
@@ -565,13 +553,12 @@ class MiniMixCommunityAPI {
                 completion!(success: false, jsonData: nil, message: "upload_track_file api failed to return parseable json", error: jsonErr)
                 return
             }
-            print("uploadTrackFile returned json:")
-            print(parsedResult)
+            //print("uploadTrackFile returned json:")
+            //print(parsedResult)
             guard let parsedJson = parsedResult as? [String: AnyObject] else {
                 completion!(success: false, jsonData: nil, message: "upload_track_file api failed to return parseable json", error: nil)
                 return
             }
-            //TODO: check the json response here for the track file info...
             completion!(success: true, jsonData: parsedJson, message: nil, error: nil)
         }
         trackFileTask.resume()
@@ -595,7 +582,6 @@ class MiniMixCommunityAPI {
             return false
         }
         let defaults = NSUserDefaults.standardUserDefaults()
-        //defaults.setBool(true, forKey: DEFAULTS_KEY_LOGGED_IN_FLAG) //this seems not necessary..just use existance of token and expiry..
         defaults.setObject(api_token, forKey: DEFAULTS_KEY_API_TOKEN) //TODO: maybe should put these in keychain instead of user defaults
         defaults.setObject(authtoken_expiry, forKey: DEFAULTS_KEY_API_EXPIRY) //..
         return true
@@ -616,7 +602,7 @@ class MiniMixCommunityAPI {
             let base64EncodedString = utf8str?.base64EncodedStringWithOptions(NSDataBase64EncodingOptions(rawValue: 0))
             return "Basic \(base64EncodedString!)"
         case .HTTPTokenAuth:
-            // TODO: Retreieve Auth_Token from Keychain
+            // TODO: Retreieve Auth_Token from Keychain, version 2.0
             let userToken = getUserAuthToken()  //KeychainAccess.passwordForAccount("Auth_Token", service: "KeyChainService") as String? {
             return "Token token=\(userToken)"
         }
@@ -625,7 +611,6 @@ class MiniMixCommunityAPI {
         let defaults = NSUserDefaults.standardUserDefaults()
         
         let existingToken =  (defaults.objectForKey(DEFAULTS_KEY_API_TOKEN) as? String) ?? ""
-        //TODO: check expiry
         return existingToken
     }
     
@@ -691,7 +676,6 @@ class MiniMixCommunityAPI {
     private func mixAudioFilePayload(song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
         let dataPiecesForBody = NSMutableData()
         
-        //dataPiecesForBody.appendData(addFormData(boundary, name: User.Keys.Email, theData: userEmail))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: song.id))
         dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "mix", attachmentFilename: "mixfile", theData: AudioCache.mixedSongAsData(song)))
         dataPiecesForBody.appendData("--\(boundary)--\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
@@ -700,7 +684,6 @@ class MiniMixCommunityAPI {
     private func trackAudioFilePayload(track: AudioTrack, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
         let dataPiecesForBody = NSMutableData()
         
-        //dataPiecesForBody.appendData(addFormData(boundary, name: User.Keys.Email, theData: userEmail))
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: track.song!.id))
         dataPiecesForBody.appendData(addFormData(boundary, name: AudioTrack.Keys.ID, theData: track.id))
         dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "track", attachmentFilename: "trackfile", theData: AudioCache.trackAudioAsData(track)))

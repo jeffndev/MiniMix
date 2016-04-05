@@ -11,7 +11,6 @@ import UIKit
 class TrackTableViewCell: UITableViewCell {
 
     @IBOutlet weak var muteButton: UIButton!
-  //  @IBOutlet weak var eraseButton: UIButton!
     @IBOutlet weak var stopTrackPlayButton: UIButton!
     @IBOutlet weak var playTrackButton: UIButton!
     @IBOutlet weak var trackNameTextView: UITextField!
@@ -29,7 +28,6 @@ class TrackTableViewCell: UITableViewCell {
                 return
             }
             playTrackButton.enabled = track.hasRecordedFile
-            //eraseButton.enabled = track.hasRecordedFile
             muteButton.enabled = track.hasRecordedFile
             trackProgressUpdate()
         }
@@ -64,17 +62,6 @@ class TrackTableViewCell: UITableViewCell {
         playTrackButton.hidden = false
         stopTrackPlayButton.hidden = true
     }
-//    @IBAction func eraseTrack() {
-//        guard let delegate = delegate, let track = track else {
-//            return
-//        }
-//        delegate.eraseTrackRecording(track) { success in
-//            self.playTrackButton.enabled = self.track!.hasRecordedFile
-//            self.muteButton.enabled = self.track!.hasRecordedFile
-//            //self.eraseButton.enabled = self.track!.hasRecordedFile
-//            self.trackProgressUpdate()
-//        }
-//    }
     @IBAction func muteTrackPlayback() {
         muteMode = !muteMode
         muteButton.backgroundColor = muteMode ? UIColor.yellowColor() : UIColor.clearColor()
@@ -130,7 +117,6 @@ class TrackTableViewCell: UITableViewCell {
         }
         playTrackButton.enabled = track.hasRecordedFile
         muteButton.enabled = track.hasRecordedFile
-        //eraseButton.enabled = track.hasRecordedFile
     }
     func setTrackPlayButtonsToReadyToPlayState() {
         stopTrackPlayButton.hidden = true
@@ -139,7 +125,6 @@ class TrackTableViewCell: UITableViewCell {
     
     override func setSelected(selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
-
         // Configure the view for the selected state
     }
 

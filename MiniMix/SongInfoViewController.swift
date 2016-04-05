@@ -72,39 +72,6 @@ class SongInfoViewController: UIViewController {
     var sharedContext: NSManagedObjectContext {
         return CoreDataStackManager.sharedInstance.managedObjectContext
     }
-//    lazy var userFetchedResultsController: NSFetchedResultsController = {
-//        let fetchRequest = NSFetchRequest(entityName: "User")
-//        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "socialName", ascending: true)]
-//        let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
-//            managedObjectContext: self.sharedContext,
-//            sectionNameKeyPath: nil,
-//            cacheName: nil)
-//        
-//        return fetchedResultsController
-//    }()
-//    
-//    lazy var songsFetchedResultsControllerForUser: NSFetchedResultsController = {
-//        let fetchRequest = NSFetchRequest(entityName: "SongMix")
-//        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
-//        fetchRequest.predicate = NSPredicate(format: "artist == %@", self.currentUser)
-//        let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
-//            managedObjectContext: self.sharedContext,
-//            sectionNameKeyPath: nil,
-//            cacheName: nil)
-//        
-//        return fetchedResultsController
-//    }()
-
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
 
     @IBAction func exitModal(sender: UIBarButtonItem) {
         if let song = song {
@@ -114,7 +81,6 @@ class SongInfoViewController: UIViewController {
             song.rating = songStarRatings.rating
             song.songDescription = songDecriptionTextView.text
             song.keepPrivate = keepPrivateToggle.on
-            //WARNING: TODO: this maybe would be better in a delegate back to the SongList controller to do this..
             CoreDataStackManager.sharedInstance.saveContext()
             //send off changes to the cloud, too...
             if song.wasUploaded {

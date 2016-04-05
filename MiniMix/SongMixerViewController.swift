@@ -17,7 +17,6 @@ protocol TrackControllerDelegate {
     func stopTrackPlayback(track: AudioTrack)
     func changeTrackVolumne(track: AudioTrack, newVolume volume: Float)
     func muteTrackPlayback(track: AudioTrack, doMute: Bool)
-    func eraseTrackRecording(track: AudioTrack, completion: (success: Bool)->Void)
 }
 protocol MasterPlaybackControllerDelegate {
     func playMix(cell: MasterTableViewCell)
@@ -39,8 +38,8 @@ class SongMixerViewController: UITableViewController {
     }
     var dataIsDirty = false
     var audioRecorder: AVAudioRecorder!
-    var currentRecordingTrackRef: AudioTrack? //WARNING: I don't like these..
-    var currentRecordingCell: TrackTableViewCell? //    got to make sure this is safe: using for Progess updates And StopRecord notify
+    var currentRecordingTrackRef: AudioTrack?
+    var currentRecordingCell: TrackTableViewCell?
     var players = [AVAudioPlayer]()
     var recordProgressTimer: NSTimer?
     var recordSeconds = 0
@@ -67,7 +66,7 @@ class SongMixerViewController: UITableViewController {
         // Do any additional setup after loading the view.
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .Add, target: self, action: #selector(SongMixerViewController.addTrack))
         navigationItem.hidesBackButton = true
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: " \u{2329} Back", style: .Plain, target: self, action: #selector(SongMixerViewController.back))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: " \u{2329} Save", style: .Plain, target: self, action: #selector(SongMixerViewController.back))
     }
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
@@ -100,8 +99,8 @@ class SongMixerViewController: UITableViewController {
         //First time the song mix is created, AFTER recordings done, back to the Info Form
         //   after that, just go back to the list
         if dataIsDirty {
-            song.version += 1
-            print("SONG VERSION CHANGED from \(song.version - 1) to \(song.version) (\(song.name))")
+            song.version = Int(song.version) + 1
+            print("SONG VERSION CHANGED from \(Int(song.version) - 1) to \(song.version) (\(song.name))")
             dataIsDirty = false
             let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
             dispatch_async(backgroundQueue) {
@@ -200,7 +199,7 @@ class SongMixerViewController: UITableViewController {
                     return
                 }
                 self.dataIsDirty = true
-                //delete audio file : TODO: delete the code below that is commented out...CoreData will take care of all that
+                //NOTE: delete audio file happens in prepareForDeletion on the CoreData object
                 dispatch_async(dispatch_get_main_queue()) {
                     self.sharedContext.deleteObject(track)
                     CoreDataStackManager.sharedInstance.saveContext()
@@ -240,7 +239,6 @@ extension SongMixerViewController: TrackControllerDelegate {
     
     func recordTrack(track: AudioTrack, completion: (success: Bool) -> Void) {
         //NOTE: i am setting the dataIsDirty flag after the recording stops and is successful
-        print("recording: \(NSDate())")
         currentRecordingTrackRef = track
         let rowCount = tableView.numberOfRowsInSection(TRACKS_SECTION)
         for row in 0..<rowCount {
@@ -279,7 +277,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         }
         //get ready to record!!
         let recordSettings = [String: AnyObject]()
-        // TODO: look into finer control of file and audio formats..deeper dive needed, though
+        // TODO: look into finer control of file and audio formats..deeper dive needed, though: version 2.0 backlog item
 //            AVFormatIDKey: NSNumber(unsignedInt:kAudioFormatAppleLossless),
 //            AVEncoderAudioQualityKey : AVAudioQuality.Min.rawValue,
 //            AVEncoderBitRateKey : 320000,
@@ -361,20 +359,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         }
         completion(success: true)
     }
-    func eraseTrackRecording(track: AudioTrack, completion: (success: Bool) -> Void) {
-        //EMPTY: not liking this feature..just DELETE the track will do this and wont confuse user
-//        do {
-//            try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: song).path!)
-//        } catch {}
-//        
-//        dispatch_async(dispatch_get_main_queue()) {
-//            track.hasRecordedFile = false
-//            track.lengthSeconds = 0.0
-//            CoreDataStackManager.sharedInstance.saveContext()
-//        }
-//        dataIsDirty = true
-//        completion(success: true)
-    }
+    
     func stopTrackPlayback(track: AudioTrack) {
         if let player = players.filter( { $0.url! == AudioCache.trackPath(track, parentSong: song!) } ).first {
             player.stop()

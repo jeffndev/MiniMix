@@ -137,12 +137,11 @@
 				BD57916F1C6A6BFC0054742E /* LaunchScreen.storyboard */,
 				BD5791721C6A6BFC0054742E /* Info.plist */,
 				BD5791661C6A6BFC0054742E /* AppDelegate.swift */,
-				BDC7EF1B1C86244200493749 /* CoreDataStackManager.swift */,
 				BD7C69641C90E964005825A2 /* Model.xcdatamodeld */,
+				BDC7EF1B1C86244200493749 /* CoreDataStackManager.swift */,
 				BDCF83531C937B7D00DE54F7 /* ApiProviders */,
 				BDC7EF191C8623BC00493749 /* Models */,
 				BDC7EF1A1C8623EE00493749 /* ViewControllers */,
-				BD01CAFB1C766026000742C7 /* FloatRatingView.swift */,
 				BD8F89991C99CD3C009B766E /* AudioHelpers.swift */,
 				BD28EB041CA4753C00AB0339 /* SupportingFiles */,
 			);
@@ -175,6 +174,7 @@
 		BDC7EF1A1C8623EE00493749 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
+				BDD0181A1CB2EC5D008FDCFB /* CustomViews */,
 				BD5F754F1C88B00C00C82023 /* CustomTableCells */,
 				BD57917C1C6A7B470054742E /* SongMixerViewController.swift */,
 				BD5791781C6A761E0054742E /* SongListViewController.swift */,
@@ -192,6 +192,14 @@
 				BDCF83511C937B7500DE54F7 /* MiniMixCommunityAPI.swift */,
 			);
 			name = ApiProviders;
+			sourceTree = "<group>";
+		};
+		BDD0181A1CB2EC5D008FDCFB /* CustomViews */ = {
+			isa = PBXGroup;
+			children = (
+				BD01CAFB1C766026000742C7 /* FloatRatingView.swift */,
+			);
+			name = CustomViews;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

@@ -10,13 +10,18 @@ import AVFoundation
 
 
 struct AudioHelpers {
-    //TODO: put the Path helpers in here too..
-    
     
     static func createSongMixFile(song: SongMix, postHandler: (success: Bool) -> Void) {
+        guard !song.tracks.isEmpty else {
+            postHandler(success: false)
+            return
+        }
         let composition = AVMutableComposition()
         var inputMixParms = [AVAudioMixInputParameters]()
         for track in song.tracks {
+            guard track.hasRecordedFile else {
+                continue
+            }
             let trackUrl = AudioCache.trackPath(track, parentSong: song)
             let audioAsset = AVURLAsset(URL: trackUrl)
             let audioCompositionTrack = composition.addMutableTrackWithMediaType(AVMediaTypeAudio, preferredTrackID: kCMPersistentTrackID_Invalid)
@@ -30,7 +35,8 @@ struct AudioHelpers {
             inputMixParms.append(mixParm)
         }
         //EXPORT
-        //TODO: change this to export mp3's because I can't, generally, attach m4a's to audio tags in web pages, and I want that for the web site portal
+        //TODO: this is for Version 2 release. allowing for better access on MiniMix web site to be developed
+        //      change this to export mp3's because I can't, generally, attach m4a's to audio tags in web pages, and I want that for the web site portal
         //      here's one possible way: http://stackoverflow.com/questions/24111026/avassetexportsession-export-mp3-while-keeping-metadata
         //      change type to ...Passthrough, then change file type to com.apple.quicktime-movie, then rename file to .mp3 ending
         let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
@@ -56,6 +62,8 @@ struct AudioHelpers {
                     print("EXPORT file mix failed..")
                 }
             }
+        } else {
+            postHandler(success: false)
         }
     }
     

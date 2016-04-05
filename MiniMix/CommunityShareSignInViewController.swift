@@ -16,6 +16,7 @@ class CommunityShareSignInViewController: UIViewController {
     @IBOutlet weak var publicMonikerTextField: UITextField!
     
     var currentUser: User!
+    var postSigninCompletion: (() -> Void)?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -113,7 +114,7 @@ class CommunityShareSignInViewController: UIViewController {
                 self.currentUser.servicePassword = success ? password : ""
                 self.currentUser.socialName = success ? displayName : ""
                 CoreDataStackManager.sharedInstance.saveContext()
-                self.dismissViewControllerAnimated(true, completion: nil)
+                self.dismissViewControllerAnimated(true, completion: self.postSigninCompletion) //MARK: postSignup Completion...
             }
         }
     }

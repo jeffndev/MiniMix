@@ -33,7 +33,7 @@ class AudioTrack: NSManagedObject {
     @NSManaged var id: String//NSUUID
     @NSManaged var name: String
     @NSManaged var createDate: NSDate
-    @NSManaged var trackType: String //TrackType
+    //@NSManaged var trackType: String //TrackType
     @NSManaged var displayOrder: Int32
     @NSManaged var trackDescription: String?
     @NSManaged var lengthSeconds: NSNumber? //Double?
@@ -71,7 +71,7 @@ class AudioTrack: NSManagedObject {
             createDate = NSDate()
         }
 
-        trackType = TrackType.MIX //  dictionary[AudioTrack.Keys.TrackType] as! String TODO: this is not needed any more remove..
+        //trackType = TrackType.MIX //  dictionary[AudioTrack.Keys.TrackType] as! String TODO: this is not needed any more remove..
         trackDescription = dictionary[AudioTrack.Keys.TrackDescription] as? String
         lengthSeconds = dictionary[AudioTrack.Keys.DurationSeconds] as? Double
         mixVolume = dictionary[AudioTrack.Keys.MixVolume] as! Float
@@ -93,7 +93,7 @@ class AudioTrack: NSManagedObject {
         hasRecordedFile = false
         //
         name = trackName
-        self.trackType = (trackType == TrackType.MIX ? TrackType.MIX : TrackType.MASTER)
+        //self.trackType = (trackType == TrackType.MIX ? TrackType.MIX : TrackType.MASTER)
         displayOrder = trackOrder
     }
     
@@ -113,14 +113,4 @@ class AudioTrack: NSManagedObject {
             print("Failed to delete track file: \(deleteTrackErr)")
         }
     }
-    
-//    init(trackName: String, type: TrackType, trackDescription: String?) {
-//        name = trackName
-//        self.trackDescription = trackDescription
-//        trackType = type
-//        createDate = NSDate()
-//        id = NSUUID().UUIDString
-//        mixVolume = 1.0
-//        hasRecordedFile = false
-//    }
 }

@@ -10,6 +10,8 @@ import UIKit
 
 class SongListingTableViewCell: UITableViewCell {
     
+    let SYNC_WARNING_COLOR = UIColor(colorLiteralRed: 1, green: 0.6, blue: 0.4, alpha: 1)
+    
     @IBOutlet weak var songTitleLabel: UILabel!
     @IBOutlet weak var songCommentLabel: UITextView!
     @IBOutlet weak var songStarsRankLable: UILabel!
@@ -44,7 +46,6 @@ class SongListingTableViewCell: UITableViewCell {
         delegate.syncSongWithCloud(self, song: song)
     }
     func setReadyToPlayUIState(ready: Bool) {
-        //TODO: remove this dispatch..that should be handled by the code that calls it higher in the stack
         dispatch_async(dispatch_get_main_queue()) {
             self.playButton.hidden = !ready
             self.stopButton.hidden = ready
@@ -53,7 +54,14 @@ class SongListingTableViewCell: UITableViewCell {
     }
     func setSyncWarningState(shouldSync: Bool) {
         if let syncButton = syncButton {
-            syncButton.hidden = !shouldSync
+            syncButton.backgroundColor = shouldSync ? SYNC_WARNING_COLOR : UIColor.clearColor()
+        }
+    }
+    func setUploadedState(wasUploaded: Bool) {
+        if let syncButton = syncButton {
+            syncButton.layer.cornerRadius = 8
+            syncButton.layer.borderWidth = 0
+            syncButton.hidden = !wasUploaded
         }
     }
 }

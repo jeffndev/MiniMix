@@ -20,10 +20,9 @@ class CommunityMixesListViewController: SongListViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         if !currentUser.socialName.isEmpty {
-            let lbl = UILabel() //  UIBarButtonItem(title: "mix artist: \(currentUser.socialName)", style: .Plain, target: nil, action: nil)
+            let lbl = UILabel()
             lbl.text = "mix artist: \(currentUser.socialName)"
             lbl.sizeToFit()
-            //lbl.font = ?? TODO:
             navigationItem.leftBarButtonItem = UIBarButtonItem(customView: lbl)
         }
     }
@@ -49,7 +48,7 @@ class CommunityMixesListViewController: SongListViewController {
     //MARK: Actions..
     @IBAction func doSongSearch() {
         guard currentUser.isRegistered && !currentUser.email.isEmpty && !currentUser.servicePassword.isEmpty else {
-            doSignUp()
+            doSignUp(nil)
             return
         }
         let searchViewController = storyboard?.instantiateViewControllerWithIdentifier("SearchCommunityViewController") as! SearchCommunityViewController
@@ -58,7 +57,6 @@ class CommunityMixesListViewController: SongListViewController {
     //MARK: Table View Delegate overrides
     @available(iOS 8.0, *)
     override func tableView(tableView: UITableView, editActionsForRowAtIndexPath indexPath: NSIndexPath) -> [UITableViewRowAction]? {
-        //three: Delete, ReMix, Edit, Share
         let delete = UITableViewRowAction(style: .Destructive, title: "Delete") { action, idxPath in
             self.deleteAction(idxPath)
         }
@@ -67,7 +65,6 @@ class CommunityMixesListViewController: SongListViewController {
     override func configureCell(cell: SongListingTableViewCell, withSongMix song: SongMix) {
         super.configureCell(cell, withSongMix: song)
         if let artistNameLbl =  cell.artistName, let artist = song.artist {
-            //TODO: gotta figure out, in storyboard where this is going to fit in that cell..its already pretty tight
             artistNameLbl.text = "artist: \(artist.socialName)"
         }
         cell.contentView.alpha = song.keepPrivate ? 0.3 : 1.0
@@ -85,7 +82,6 @@ extension CommunityMixesListViewController {
             return
         }
         currentPlayingCellRef = cell
-        //cell.setReadyToPlayUIState(true) //
         let api = MiniMixCommunityAPI()
         api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
             guard success else {
@@ -124,7 +120,6 @@ extension CommunityMixesListViewController {
         players.removeAll()
         if let songUrl = song.mixFileUrl {
             do {
-                //TODO: activity indicator..start
                 let songDataTry = NSData(contentsOfURL: NSURL(string: songUrl)!)
                 guard let songData = songDataTry else {
                     dispatch_async(dispatch_get_main_queue()) {
