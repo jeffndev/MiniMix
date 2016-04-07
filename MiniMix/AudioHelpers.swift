@@ -11,18 +11,18 @@ import AVFoundation
 
 struct AudioHelpers {
     
-    static func createSongMixFile(song: SongMix, postHandler: (success: Bool) -> Void) {
-        guard !song.tracks.isEmpty else {
+    static func createSongMixFile(songId: String, songName: String, trackIds: [String], postHandler: (success: Bool) -> Void) {//song: SongMix, postHandler: (success: Bool) -> Void) {
+        guard !trackIds.isEmpty else {
             postHandler(success: false)
             return
         }
         let composition = AVMutableComposition()
         var inputMixParms = [AVAudioMixInputParameters]()
-        for track in song.tracks {
-            guard track.hasRecordedFile else {
-                continue
-            }
-            let trackUrl = AudioCache.trackPath(track, parentSong: song)
+        for trackId in trackIds {
+//            guard track.hasRecordedFile else {
+//                continue
+//            }
+            let trackUrl = AudioCache.trackPath(trackId, parentSongId: songId)
             let audioAsset = AVURLAsset(URL: trackUrl)
             let audioCompositionTrack = composition.addMutableTrackWithMediaType(AVMediaTypeAudio, preferredTrackID: kCMPersistentTrackID_Invalid)
             do {
@@ -40,7 +40,7 @@ struct AudioHelpers {
         //      here's one possible way: http://stackoverflow.com/questions/24111026/avassetexportsession-export-mp3-while-keeping-metadata
         //      change type to ...Passthrough, then change file type to com.apple.quicktime-movie, then rename file to .mp3 ending
         let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
-        let mixUrl = AudioCache.mixedSongPath(song)
+        let mixUrl = AudioCache.mixedSongPath(songId, songName: songName)
         do {
             try NSFileManager.defaultManager().removeItemAtPath(mixUrl.path!)
         } catch {

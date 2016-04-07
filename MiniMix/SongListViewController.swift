@@ -136,10 +136,14 @@ class SongListViewController: UIViewController {
             self.activityIndicator.startAnimating()
         }
         let songs = songsFetchedResultsControllerForUser.fetchedObjects as! [SongMix]
-        var songIdSet = Set<String>()
+        var mySongIdSet = Set<String>()
+        dispatch_sync(dispatch_get_main_queue()) {
+            for song in songs {
+                mySongIdSet.insert(song.id)
+            }
+        }
         for song in songs {
-            songIdSet.insert(song.id)
-            cloudUploadTasks(song, keepPrivate: song.keepPrivate) //server handles version and only updates what's necessary..
+            cloudUploadTasks(song) //server handles version and only updates what's necessary..
         }
         //step 2. get list of songs from cloud (along with versions), if not found on device (or version is less..refresh as needed (DOWNSYNC)
         let api = MiniMixCommunityAPI()
@@ -174,18 +178,23 @@ class SongListViewController: UIViewController {
                 let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
                 let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
                 let _ = songArray.map() {
-                    if !songIdSet.contains($0[SongMix.Keys.ID] as! String) {
+                    if !mySongIdSet.contains($0[SongMix.Keys.ID] as! String) {
                         let song = SongMix(jsonDictionary: $0, context: sharedContext)
+                        let songId = song.id
+                        let songName = song.name
+                        let mixUrl = song.mixFileUrl
                         dispatch_async(backgroundQueue) {
-                            self.downSyncUserSongFile(song)
+                            AudioCache.downSyncUserSongFile(songId, songName: songName, songFileRemoteUrl: mixUrl)
                         }
                         song.artist = self.currentUser
                         if let tracks = $0["audio_tracks"] as? [[String: AnyObject]] {
                             let _ = tracks.map() {
                                 let track = AudioTrack(dictionary: $0, context: sharedContext)
                                 track.song = song
+                                let trackId = track.id
+                                let trackUrl = track.trackFileUrl
                                 dispatch_async(backgroundQueue) {
-                                    self.downSyncUserTrackFile(track)
+                                    AudioCache.downSyncUserTrackFile(trackId, parentSongId: songId, trackRemoteUrl: trackUrl)
                                 }
                             }
                         }
@@ -197,71 +206,29 @@ class SongListViewController: UIViewController {
             }
         }
     }
-    
-    func downSyncUserSongFile(song: SongMix) {
-        //create subdirectory in Documents for the SONG, the tracks and mix go in there...
-        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.songDirectory(song)) {
-            do {
-                try NSFileManager.defaultManager().createDirectoryAtPath(AudioCache.songDirectory(song), withIntermediateDirectories: true, attributes: nil)
-            } catch let error as NSError {
-                print("could not create song directory, not able to prepare for recording: \(error.localizedDescription)")
-                return
-            }
-        }
-        guard !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) else {
-            print("mix file already exists locally, not downloading")
-            return
-        }
-        guard let songUrl = song.mixFileUrl else {
-            return
-        }
-        guard let songData = NSData(contentsOfURL: NSURL(string: songUrl)!) else {
-            return
-        }
-        songData.writeToURL(AudioCache.mixedSongPath(song), atomically: true)
-        print("mix file for song: \(song.name) downloaded locally with Sync")
-    }
-            
-    func downSyncUserTrackFile(track: AudioTrack) {
-        //create subdirectory in Documents for the SONG, the tracks and mix go in there...
-        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.songDirectory(track.song!)) {
-            do {
-                try NSFileManager.defaultManager().createDirectoryAtPath(AudioCache.songDirectory(track.song!), withIntermediateDirectories: true, attributes: nil)
-            } catch let error as NSError {
-                print("could not create song directory, not able to prepare for recording: \(error.localizedDescription)")
-                return
-            }
-        }
-        guard !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.trackPath(track, parentSong: track.song!).path!) else {
-            print("track file already exists locally, not downloading")
-            return
-        }
-        guard let trackUrl = track.trackFileUrl else {
-            return
-        }
-        guard let trackData = NSData(contentsOfURL: NSURL(string: trackUrl)!) else {
-            return
-        }
-        trackData.writeToURL(AudioCache.trackPath(track, parentSong: track.song!), atomically: true)
-        print("track file \(track.name) for song: \(track.song!.name) downloaded locally with Sync")
-    }
-    
+
     @IBAction func shareAction() {
         if let indexPath = tableView.indexPathForSelectedRow {
             let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
-            if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
-                AudioHelpers.createSongMixFile(song) { success in
+            let songId = song.id
+            let songName = song.name
+            var nonEmptyTrackIds = [String]()
+            for t in song.tracks {
+                if t.hasRecordedFile { nonEmptyTrackIds.append(t.id) }
+            }
+            if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(songId, songName: songName).path!) {
+                AudioHelpers.createSongMixFile(songId, songName: songName, trackIds: nonEmptyTrackIds) { success in
                     if success {
-                        self.shareMixFile(song)
+                        self.shareMixFile(songId, songName: songName)
                     } //note: fail silently..
                 }
             } else {
-                shareMixFile(song)
+                shareMixFile(songId, songName: songName)
             }
         }
     }
-    func shareMixFile(song: SongMix) {
-        let mixUrl = AudioCache.mixedSongPath(song)
+    func shareMixFile(songId: String, songName: String) {
+        let mixUrl = AudioCache.mixedSongPath(songId, songName: songName)
         guard NSFileManager.defaultManager().fileExistsAtPath(mixUrl.path!) else {
             print("Could not find mix file")
             return
@@ -376,11 +343,17 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
             if #available(iOS 8.0, *) {
                 let alert = UIAlertController(title: "Share to Cloud", message: nil, preferredStyle: .Alert) //maybe .Alert style better??
                 let shareWithCommunity = UIAlertAction(title: "Share with Community", style: .Default) { action in
-                    self.cloudUploadTasks(song, keepPrivate: false)
+                    dispatch_sync(dispatch_get_main_queue()) {
+                        song.keepPrivate = false
+                    }
+                    self.cloudUploadTasks(song)
                 }
                 alert.addAction(shareWithCommunity)
                 let savePrivate = UIAlertAction(title: "Save as Private", style: .Default) { action in
-                    self.cloudUploadTasks(song, keepPrivate: true)
+                    dispatch_sync(dispatch_get_main_queue()) {
+                        song.keepPrivate = true
+                    }
+                    self.cloudUploadTasks(song)
                 }
                 alert.addAction(savePrivate)
                 dispatch_async(dispatch_get_main_queue()) {
@@ -396,9 +369,20 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
         }
     }
     
-    func cloudUploadTasks(song: SongMix, keepPrivate: Bool) {
+    func cloudUploadTasks(song: SongMix) {
+        var coreRecordedTracksTry: [AudioTrack]?
+        var songDtoTry: SongMixDTO?
+        dispatch_sync(dispatch_get_main_queue()) {
+            coreRecordedTracksTry = song.tracks.filter { $0.hasRecordedFile }
+            songDtoTry = SongMixDTO(songObject: song, includeTrackInfo: true)
+        }
+        guard let songDto = songDtoTry, coreRecordedTracks = coreRecordedTracksTry else {
+            return
+        }
+        
+        let parentSongId = songDto.id
         let api = MiniMixCommunityAPI()
-        api.uploadSong(keepPrivate, song: song) { success, jsonData, message, error in
+        api.uploadSong(songDto) { success, jsonData, message, error in
             guard success && jsonData != nil else {
                 dispatch_async(dispatch_get_main_queue()) {
                     self.showAlertMsg("Cloud Upload", msg: "Song failed to upload, please try again", posthandler: nil)
@@ -411,13 +395,16 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
                     self.showAlertMsg("Cloud Upload", msg: "Song failed to upload properly, no links returned, please try again", posthandler: nil)
                     return
                 }
-                song.keepPrivate = keepPrivate
                 song.s3RandomId = s3Id
                 song.mixFileUrl = remoteUrl
                 CoreDataStackManager.sharedInstance.saveContext()
             }
-            for track in song.tracks where track.hasRecordedFile {
-                api.uploadTrackFile(track) { success, jsonData, message, error in
+            for track in coreRecordedTracks {
+                var trackId = ""
+                dispatch_sync(dispatch_get_main_queue()) {
+                    trackId = track.id
+                }
+                api.uploadTrackFile(trackId, parentSongId: parentSongId) { success, jsonData, message, error in
                     if success && jsonData != nil{
                         dispatch_async(dispatch_get_main_queue()) {
                             if let remoteTrackUrl = jsonData![AudioTrack.Keys.TrackFileRemoteUrl] as? String, let s3Id = jsonData![AudioTrack.Keys.S3RandomId] as? String {
@@ -482,7 +469,7 @@ extension SongListViewController: SongPlaybackDelegate {
         var path: NSURL
         for track in song.tracks {
             do {
-                path = AudioCache.trackPath(track, parentSong: song)
+                path = AudioCache.trackPath(track.id, parentSongId: song.id)
                 let player = try AVAudioPlayer(contentsOfURL: path)
                 player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
                 player.delegate = self
@@ -519,7 +506,7 @@ extension SongListViewController: SongPlaybackDelegate {
                 self.showAlertMsg("Sync Upload Failure", msg: msg, posthandler: nil)
                 return
             }
-            self.cloudUploadTasks(song, keepPrivate: song.keepPrivate)
+            self.cloudUploadTasks(song)
         }
     }
 }
@@ -586,24 +573,28 @@ extension SongListViewController: NSFetchedResultsControllerDelegate {
     //MARK: Configure Cell
     func configureCell( cell: SongListingTableViewCell, withSongMix song: SongMix) {
         cell.songTitleLabel.text = song.name
-        print(song.name)
-        print(song.version)
+        //print(song.name)
+        //print(song.version)
         cell.songCommentLabel.text = song.songDescription ?? ""
         cell.songStarsRankLable.text = song.rating == nil ? "" : String(Int(song.rating!))
         cell.song = song
         cell.delegate = self
         cell.setUploadedState(song.wasUploaded)
         cell.setBusyState(false)
+        let currentUserEmail = currentUser.email
+        let currentUserPwd = currentUser.servicePassword
+        let songId = song.id
+        let songVersion = Int(song.version)
         
         if let artist = song.artist where artist.isMe && song.wasUploaded {
             //Check if YOUR song has changed (higher version), should Sync to Cloud...but only for YOUR songs
             let api = MiniMixCommunityAPI()
-            api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
+            api.verifyAuthTokenOrSignin(currentUserEmail, password: currentUserPwd) { success, message, error in
                 guard success else {
                     //Quiet failure, non-critical feature
                     return
                 }
-                api.songCloudVersionOutOfDateCheck(song) { success, istrue, message, error in
+                api.songCloudVersionOutOfDateCheck(songId, localSongVersion: songVersion) { success, istrue, message, error in
                     guard success, let isOutOfDate = istrue else {
                         return
                     }

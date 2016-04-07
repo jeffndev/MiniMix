@@ -83,13 +83,14 @@ class SongInfoViewController: UIViewController {
             song.keepPrivate = keepPrivateToggle.on
             CoreDataStackManager.sharedInstance.saveContext()
             //send off changes to the cloud, too...
+            let songDto = SongMixDTO(songObject: song)
             if song.wasUploaded {
                 let api = MiniMixCommunityAPI()
                 api.verifyAuthTokenOrSignin(song.artist!.email, password: song.artist!.servicePassword) { success, message, error in
                     guard success else {
                         return
                     }
-                    api.updateSongInfo(song) { success, jsonData, message, error in
+                    api.updateSongInfo(songWithNoTrackInfo: songDto) { success, jsonData, message, error in
                         if !success {
                             print("could not update the song information in MiniMix Cloud")
                         }

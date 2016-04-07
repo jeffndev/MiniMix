@@ -97,8 +97,11 @@ class MiniMixCommunityAPI {
         task.resume()
     }
     
-    func songCloudVersionOutOfDateCheck(song: SongMix, completion: BoolCompletionHander) {
-        let builtUrlString = "\(API_BASE_URL_SECURE)/song_version" + escapedParameters(["song_id": song.id])
+    func songCloudVersionOutOfDateCheck(songId: String, localSongVersion: Int, completion: BoolCompletionHander) {
+        var builtUrlString = ""
+        dispatch_sync(dispatch_get_main_queue()) {
+            builtUrlString = "\(self.API_BASE_URL_SECURE)/song_version" + self.escapedParameters(["song_id": songId])
+        }
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
         request.HTTPMethod = "GET"
@@ -135,13 +138,14 @@ class MiniMixCommunityAPI {
                 completion!(success: false, istrue: nil, message: "song version check failed to return parseable json", error: nil)
                 return
             }
-            completion!(success: true, istrue: version < Int(song.version), message: nil, error: nil)
+            
+            completion!(success: true, istrue: version < localSongVersion, message: nil, error: nil)
         }
         task.resume()
     }
     
-    func checkIfSongIsPrivate(song: SongMix, completion: BoolCompletionHander) {
-        let builtUrlString = "\(API_BASE_URL_SECURE)/song_privacy" + escapedParameters(["song_id": song.id])
+    func checkIfSongIsPrivate(songId: String, completion: BoolCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/song_privacy" + escapedParameters(["song_id": songId])
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
         request.HTTPMethod = "GET"
@@ -288,7 +292,7 @@ class MiniMixCommunityAPI {
         task.resume()
     }
     
-    func updateSongInfo(song: SongMix, completion: DataCompletionHander) {
+    func updateSongInfo(songWithNoTrackInfo song: SongMixDTO, completion: DataCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/update_song_info"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -328,29 +332,37 @@ class MiniMixCommunityAPI {
         songTask.resume()
     }
     
-    func uploadSong(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
+    func uploadSong(song: SongMixDTO, completion: DataCompletionHander) {
         //first check that the song mix actually happened...
-        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song).path!) {
-            AudioHelpers.createSongMixFile(song) { success in
+        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.mixedSongPath(song.id, songName: song.name).path!) {
+            var nonEmptyTrackIDs = [String]()
+            if let tracks = song.tracks {
+                for track in tracks {
+                    if track.hasRecordedFile { nonEmptyTrackIDs.append(track.id) }
+                }
+            }
+            AudioHelpers.createSongMixFile(song.id, songName: song.name, trackIds: nonEmptyTrackIDs) { success in
                 if !success {
                     completion!(success: success, jsonData: nil, message: "Unable to create track mix file", error: nil)
                 } else {
-                    self.uploadSongAfterFileCheck(keepPrivate, song: song, completion: completion)
+                    self.uploadSongAfterFileCheck(song, completion: completion)
                 }
             }
         } else {
-            uploadSongAfterFileCheck(keepPrivate, song: song, completion: completion)
+            uploadSongAfterFileCheck(song, completion: completion)
         }
 
         
     }
-    func uploadSongAfterFileCheck(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
-        uploadSongInfo(keepPrivate, song: song) { success, json, message, error in
+    func uploadSongAfterFileCheck(song: SongMixDTO, completion: DataCompletionHander) {
+        let songName = song.name
+        let songId = song.id
+        uploadSongInfo(song) { success, json, message, error in
             if !success {
                 completion!(success: success, jsonData: json, message: message, error: error)
                 return
             }
-            self.uploadSongMixFile(song) { success, json, message, error in
+            self.uploadSongMixFile(songId, songName: songName) { success, json, message, error in
                 completion!(success: success, jsonData: json, message: message, error: error)
             }
         }
@@ -448,7 +460,7 @@ class MiniMixCommunityAPI {
     }
     
     //MARK: song upload PIECES...broken down so not one HUGE http request..
-    func uploadSongInfo(keepPrivate: Bool, song: SongMix, completion: DataCompletionHander) {
+    func uploadSongInfo(song: SongMixDTO, completion: DataCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/upload_song"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -487,7 +499,7 @@ class MiniMixCommunityAPI {
         songTask.resume()
     }
     
-    func uploadSongMixFile(song: SongMix, completion: DataCompletionHander) {
+    func uploadSongMixFile(songId: String, songName: String, completion: DataCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/upload_song_file"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -495,7 +507,7 @@ class MiniMixCommunityAPI {
         //HTTP HEADERS...
         request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
         request.addValue(buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
-        request.HTTPBody =  mixAudioFilePayload(song, htmlMultipartFormBoundary: httpRequestBoundary)
+        request.HTTPBody =  mixAudioFilePayload(songId, songName: songName, htmlMultipartFormBoundary: httpRequestBoundary)
         
         //GOT REQUEST....
         let session = NSURLSession.sharedSession()
@@ -525,7 +537,7 @@ class MiniMixCommunityAPI {
         }
         songFileTask.resume()
     }
-    func uploadTrackFile(track: AudioTrack, completion: DataCompletionHander) {
+    func uploadTrackFile(trackId: String, parentSongId: String, completion: DataCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/upload_track_file"
         let url = NSURL(string: builtUrlString)!
         let request = NSMutableURLRequest(URL: url)
@@ -533,7 +545,7 @@ class MiniMixCommunityAPI {
         //HTTP HEADERS...
         request.addValue(buildContentTypeHdr(.HTTPMultipartContent, requestBoundary: httpRequestBoundary), forHTTPHeaderField: "Content-Type")
         request.addValue(buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
-        request.HTTPBody =  trackAudioFilePayload(track, htmlMultipartFormBoundary: httpRequestBoundary)
+        request.HTTPBody =  trackAudioFilePayload(trackId, parentSongID: parentSongId, htmlMultipartFormBoundary: httpRequestBoundary)
         
         //GOT REQUEST....
         let session = NSURLSession.sharedSession()
@@ -638,7 +650,7 @@ class MiniMixCommunityAPI {
         return data
     }
     
-    private func mixFileMetaDataUploadPayload(song: SongMix, includeTrackInfo:Bool, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+    private func mixFileMetaDataUploadPayload(song: SongMixDTO, includeTrackInfo:Bool, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
         let dataPiecesForBody = NSMutableData()
         
         dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.PrivacyFlag, theData: "\(song.keepPrivate)"))
@@ -655,8 +667,8 @@ class MiniMixCommunityAPI {
         if let song_description = song.songDescription {
             dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.SongDescription, theData: song_description))
         }
-        if includeTrackInfo {
-            for (index, track) in song.tracks.enumerate() {
+        if let tracks = song.tracks where includeTrackInfo {
+            for (index, track) in tracks.enumerate() {
                 dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.ID)\(index)", theData: track.id))
                 dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.Name)\(index)" , theData: track.name))
                 dataPiecesForBody.appendData(addFormData(boundary, name: "\(AudioTrack.Keys.TrackDisplayOrder)\(index)", theData: "\(track.displayOrder)"))
@@ -673,20 +685,20 @@ class MiniMixCommunityAPI {
         return dataPiecesForBody
     }
     
-    private func mixAudioFilePayload(song: SongMix, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+    private func mixAudioFilePayload(songId: String, songName: String, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
         let dataPiecesForBody = NSMutableData()
         
-        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: song.id))
-        dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "mix", attachmentFilename: "mixfile", theData: AudioCache.mixedSongAsData(song)))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: songId))
+        dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "mix", attachmentFilename: "mixfile", theData: AudioCache.mixedSongAsData(songId, songName: songName) ?? NSData()))
         dataPiecesForBody.appendData("--\(boundary)--\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
         return dataPiecesForBody
     }
-    private func trackAudioFilePayload(track: AudioTrack, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
+    private func trackAudioFilePayload(trackId: String, parentSongID: String, htmlMultipartFormBoundary boundary: String) -> NSMutableData {
         let dataPiecesForBody = NSMutableData()
         
-        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: track.song!.id))
-        dataPiecesForBody.appendData(addFormData(boundary, name: AudioTrack.Keys.ID, theData: track.id))
-        dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "track", attachmentFilename: "trackfile", theData: AudioCache.trackAudioAsData(track)))
+        dataPiecesForBody.appendData(addFormData(boundary, name: SongMix.Keys.ID, theData: parentSongID))
+        dataPiecesForBody.appendData(addFormData(boundary, name: AudioTrack.Keys.ID, theData: trackId))
+        dataPiecesForBody.appendData(addFormAttachmentData(boundary, name: "track", attachmentFilename: "trackfile", theData: AudioCache.trackAudioAsData(trackId, parentSongId: parentSongID) ?? NSData()))
         dataPiecesForBody.appendData("--\(boundary)--\r\n".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!)
         return dataPiecesForBody
     }

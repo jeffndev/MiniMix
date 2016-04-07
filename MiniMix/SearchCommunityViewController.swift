@@ -11,9 +11,9 @@ import AVFoundation
 import CoreData
 
 protocol SongSearchPlaybackDelegate {
-    func playSong(cell: SearchSongsCell, song: SongMixLite)
-    func stopSong(cell: SearchSongsCell, song: SongMixLite)
-    func downloadSong(cell: SearchSongsCell, song: SongMixLite)
+    func playSong(cell: SearchSongsCell, song: SongMixDTO)
+    func stopSong(cell: SearchSongsCell, song: SongMixDTO)
+    func downloadSong(cell: SearchSongsCell, song: SongMixDTO)
 }
 //NOTE: this searches for the non-private uploaded mixes, but from OTHER users, not yourself.
 //  If you want to re-synchronize your own mixes, that will be a sync button included somewhere on the SongListViewController
@@ -23,7 +23,7 @@ class SearchCommunityViewController: UIViewController {
     @IBOutlet weak var searchBar: UISearchBar!
     
     var currentUser: User!
-    var currentResults = [SongMixLite]()
+    var currentResults = [SongMixDTO]()
     var currentlyPlayingCellRef: SearchSongsCell?
     var player: AVAudioPlayer?
     @IBOutlet weak var searchActivityIndicator: UIActivityIndicatorView!
@@ -107,7 +107,7 @@ extension SearchCommunityViewController: UITableViewDataSource, UITableViewDeleg
         configureCell(cell, songSearchInfo: song)
         return cell
     }
-    func configureCell(cell: SearchSongsCell, songSearchInfo song: SongMixLite) {
+    func configureCell(cell: SearchSongsCell, songSearchInfo song: SongMixDTO) {
         cell.delegate = self
         cell.songInfo = song
         cell.songArtistLabel.text = "artist: \(song.userDisplayName)"
@@ -122,7 +122,7 @@ extension SearchCommunityViewController: UITableViewDataSource, UITableViewDeleg
 extension SearchCommunityViewController: UISearchBarDelegate {
     func searchBar(searchBar: UISearchBar, textDidChange searchText: String) {
         if searchText == "" {
-            currentResults = [SongMixLite]()
+            currentResults = [SongMixDTO]()
             tableView.reloadData()
             return
         }
@@ -166,14 +166,12 @@ extension SearchCommunityViewController: UISearchBarDelegate {
                 //print(jsonResponse)
                 
                 self.currentResults = jsonResponse.map() {
-                    SongMixLite(jsonDictionary: $0)
+                    SongMixDTO(jsonDictionary: $0)
                 }
-                print(self.currentResults.count)
+                //print(self.currentResults.count)
                 dispatch_async(dispatch_get_main_queue()) {
                     self.tableView.reloadData()
-                    dispatch_async(dispatch_get_main_queue()) {
-                        self.setBusyState(false)
-                    }
+                    self.setBusyState(false)
                 }
             }
         }
@@ -194,7 +192,7 @@ extension SearchCommunityViewController: UISearchBarDelegate {
 }
 extension SearchCommunityViewController: SongSearchPlaybackDelegate {
     
-    func playSong(cell: SearchSongsCell, song: SongMixLite) {
+    func playSong(cell: SearchSongsCell, song: SongMixDTO) {
         if let existingPlay = player {
             existingPlay.stop()
         }
@@ -246,7 +244,7 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
         }
     }
     
-    func stopSong(cell: SearchSongsCell, song: SongMixLite) {
+    func stopSong(cell: SearchSongsCell, song: SongMixDTO) {
         currentlyPlayingCellRef = nil
         if let player = player {
             player.stop()
@@ -254,7 +252,7 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
         cell.setReadyToPlayUIState(true)
     }
     
-    func checkIfSongExists(songInfo: SongMixLite) -> Bool {
+    func checkIfSongExists(songInfo: SongMixDTO) -> Bool {
         let fetchRequest = NSFetchRequest(entityName: "SongMix")
         fetchRequest.predicate = NSPredicate(format: "id == %@", songInfo.id)
         let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
@@ -270,7 +268,8 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
         //GET USER for Song (maybe you already have it, maybe not. If not create it here and save it
         let fetchRequest = NSFetchRequest(entityName: "User")
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "socialName", ascending: true)]
-        fetchRequest.predicate = NSPredicate(format: "socialName == %@ AND isMe == %@", socialName, false)
+        //fetchRequest.predicate = NSPredicate(format: "socialName == %@ AND isMe == %@", socialName, false)
+        fetchRequest.predicate = NSPredicate(format: "socialName == %@", socialName)
         let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
         var remoteUser: User?
         do {
@@ -278,9 +277,9 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
                 assert(usersFetched.count < 2)
                 if !usersFetched.isEmpty {
                     remoteUser = usersFetched.first!
-                    if remoteUser!.isMe {
-                        return nil
-                    }
+//                    if remoteUser!.isMe {
+//                        return nil
+//                    }
                 }
             }
         } catch let userFetchError as NSError {
@@ -294,22 +293,83 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
         return remoteUser
     }
     
-    func downloadSong(cell: SearchSongsCell, song: SongMixLite) {
-        guard song.userDisplayName != currentUser.socialName else {
+    func downloadSong(cell: SearchSongsCell, song songDto: SongMixDTO) {
+        guard !checkIfSongExists(songDto) else {
             return
         }
-        guard !checkIfSongExists(song) else {
-            return
+        dispatch_async(dispatch_get_main_queue()) {
+            guard let user = self.findOrCreateRemoteUserWithName(songDto.userDisplayName) else {
+                return
+            }
+            let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
+            let song = SongMix(songInfo: songDto, context: sharedContext)
+            let songId = song.id
+            let songName = song.name
+            let mixUrl = song.mixFileUrl
+            song.artist = user
+            CoreDataStackManager.sharedInstance.saveContext()
+            guard user.isMe else {
+                return
+            }
+            let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
+            dispatch_async(backgroundQueue) {
+                AudioCache.downSyncUserSongFile(songId, songName: songName, songFileRemoteUrl: mixUrl)
+            }
+            //TODO: missing track info...either 1. go get track info from another api call or 2. return track info for every search...
         }
-        guard let user = findOrCreateRemoteUserWithName(song.userDisplayName) else {
-            return
-        }
-        let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
-        let song = SongMix(songInfo: song, context: sharedContext)
-        song.artist = user
-        CoreDataStackManager.sharedInstance.saveContext()
+        
     }
 }
+
+
+
+//dispatch_async(dispatch_get_main_queue()) {
+//    let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
+//    let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
+//    let _ = songArray.map() {
+//        if !mySongIdSet.contains($0[SongMix.Keys.ID] as! String) {
+//            let song = SongMix(jsonDictionary: $0, context: sharedContext)
+//            let songId = song.id
+//            let songName = song.name
+//            let mixUrl = song.mixFileUrl
+//            dispatch_async(backgroundQueue) {
+//                AudioCache.downSyncUserSongFile(songId, songName: songName, songFileRemoteUrl: mixUrl)
+//            }
+//            song.artist = self.currentUser
+//            if let tracks = $0["audio_tracks"] as? [[String: AnyObject]] {
+//                let _ = tracks.map() {
+//                    let track = AudioTrack(dictionary: $0, context: sharedContext)
+//                    track.song = song
+//                    let trackId = track.id
+//                    let trackUrl = track.trackFileUrl
+//                    dispatch_async(backgroundQueue) {
+//                        AudioCache.downSyncUserTrackFile(trackId, parentSongId: songId, trackRemoteUrl: trackUrl)
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    CoreDataStackManager.sharedInstance.saveContext()
+//    self.activityIndicator.hidden = true //NOTE: some files may be still uploading, but they are meant to be background...
+//    self.activityIndicator.stopAnimating()
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 extension SearchCommunityViewController: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully flag: Bool) {
         if let cell = currentlyPlayingCellRef {

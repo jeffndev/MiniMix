@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct SongMixLite { //CHANGE to SongMixSearchState
+struct SongMixDTO { //See DTO pattern Data Transfer Object attributed to Martin Fowler: Patterns of Enterprise Software 
     
     //SongInfo
     var id: String //NSUUID
@@ -23,8 +23,9 @@ struct SongMixLite { //CHANGE to SongMixSearchState
     var mixFileUrl: String?
     var keepPrivate: Bool
     var userDisplayName: String
-    var version: Int
+    var version: NSNumber //INT
     
+    var tracks: [AudioTrackDTO]?
     
     var wasUploaded: Bool {
         return mixFileUrl != nil
@@ -52,4 +53,32 @@ struct SongMixLite { //CHANGE to SongMixSearchState
         version = (dictionary[SongMix.Keys.VersionNumber] as? Int) ?? 0
     }
     
+    init(songObject: SongMix, includeTrackInfo: Bool = false) {
+        id = songObject.id
+        name = songObject.name
+        createDate = songObject.createDate
+        genre = songObject.genre
+        userInitialized = songObject.userInitialized
+        songDescription = songObject.songDescription
+        lengthInSeconds = songObject.lengthInSeconds
+        rating = songObject.rating
+        s3RandomId = songObject.s3RandomId
+        mixFileUrl = songObject.mixFileUrl
+        keepPrivate = songObject.keepPrivate
+        version = songObject.version
+        if let artist = songObject.artist {
+            userDisplayName = artist.socialName
+        } else {
+            userDisplayName = ""
+        }
+        if includeTrackInfo {
+            if tracks == nil {
+                tracks = [AudioTrackDTO]()
+            }
+            tracks!.removeAll()
+            for t in songObject.tracks {
+                tracks!.append(AudioTrackDTO(trackObject: t))
+            }
+        }
+    }
 }

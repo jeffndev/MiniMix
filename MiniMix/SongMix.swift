@@ -86,7 +86,7 @@ class SongMix: NSManagedObject {
         version = dictionary[SongMix.Keys.VersionNumber] as! Int
     }
     
-    init(songInfo: SongMixLite, context: NSManagedObjectContext) {
+    init(songInfo: SongMixDTO, context: NSManagedObjectContext) {
         let entity = NSEntityDescription.entityForName("SongMix", inManagedObjectContext: context)!
         super.init(entity: entity, insertIntoManagedObjectContext: context)
         
@@ -122,7 +122,7 @@ class SongMix: NSManagedObject {
         for track in tracks {
             print("Deleting track: \(track.name)....")
             do {
-                try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track, parentSong: self).path!)
+                try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(track.id, parentSongId: id).path!)
             } catch let deleteTrackErr as NSError {
                 print("Failed to delete track file: \(deleteTrackErr)")
             }

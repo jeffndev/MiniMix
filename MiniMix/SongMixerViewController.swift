@@ -99,12 +99,19 @@ class SongMixerViewController: UITableViewController {
         //First time the song mix is created, AFTER recordings done, back to the Info Form
         //   after that, just go back to the list
         if dataIsDirty {
+            let songId = song.id
+            let songName = song.name
+            var nonEmptyTrackIds = [String]()
+            for t in song.tracks {
+                if t.hasRecordedFile { nonEmptyTrackIds.append(t.id) }
+            }
             song.version = Int(song.version) + 1
+            
             print("SONG VERSION CHANGED from \(Int(song.version) - 1) to \(song.version) (\(song.name))")
             dataIsDirty = false
             let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
             dispatch_async(backgroundQueue) {
-                AudioHelpers.createSongMixFile(self.song) { success in
+                AudioHelpers.createSongMixFile(songId, songName: songName, trackIds: nonEmptyTrackIds) { success in
                     if !success {
                         print("New Mix file failed")
                     }
@@ -270,6 +277,9 @@ extension SongMixerViewController: TrackControllerDelegate {
     func recordTrack(track: AudioTrack, completion: (success: Bool) -> Void) {
         //NOTE: i am setting the dataIsDirty flag after the recording stops and is successful
         currentRecordingTrackRef = track
+        let songId = song!.id
+        let trackId = track.id
+        
         let rowCount = tableView.numberOfRowsInSection(TRACKS_SECTION)
         for row in 0..<rowCount {
             if let cell =  tableView.cellForRowAtIndexPath(NSIndexPath(forRow: row, inSection: TRACKS_SECTION)) as? TrackTableViewCell {
@@ -295,9 +305,9 @@ extension SongMixerViewController: TrackControllerDelegate {
             return
         }
         //create subdirectory in Documents for the SONG, the tracks and mix go in there...
-        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.songDirectory(song!)) {
+        if !NSFileManager.defaultManager().fileExistsAtPath(AudioCache.songDirectory(songId)) {
             do {
-                try NSFileManager.defaultManager().createDirectoryAtPath(AudioCache.songDirectory(song!), withIntermediateDirectories: true, attributes: nil)
+                try NSFileManager.defaultManager().createDirectoryAtPath(AudioCache.songDirectory(songId), withIntermediateDirectories: true, attributes: nil)
             } catch let error as NSError {
                 currentRecordingTrackRef = nil
                 print("could not create song directory, not able to prepare for recording: \(error.localizedDescription)")
@@ -315,7 +325,7 @@ extension SongMixerViewController: TrackControllerDelegate {
 //            AVSampleRateKey : 44100.0
 //        ]
         do {
-            audioRecorder = try AVAudioRecorder(URL: AudioCache.trackPath(track, parentSong: song!), settings: recordSettings)
+            audioRecorder = try AVAudioRecorder(URL: AudioCache.trackPath(trackId, parentSongId: songId), settings: recordSettings)
             audioRecorder.delegate = self
         } catch let error as NSError {
             currentRecordingTrackRef = nil
@@ -329,7 +339,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         let otherTracks = song.tracks.filter { $0.id != track.id }
         for track in otherTracks {
             do {
-                let player = try AVAudioPlayer(contentsOfURL: AudioCache.trackPath(track, parentSong: song!))
+                let player = try AVAudioPlayer(contentsOfURL: AudioCache.trackPath(trackId, parentSongId: songId))
                 player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
                 players.append(player)
             } catch let error as NSError {
@@ -391,17 +401,23 @@ extension SongMixerViewController: TrackControllerDelegate {
     }
     
     func stopTrackPlayback(track: AudioTrack) {
-        if let player = players.filter( { $0.url! == AudioCache.trackPath(track, parentSong: song!) } ).first {
+        let trackId = track.id
+        let songId = song!.id
+        
+        if let player = players.filter( { $0.url! == AudioCache.trackPath(trackId, parentSongId: songId) } ).first {
             player.stop()
         } else {
             print("couldnt find the player of the track to STOP")
         }
     }
     func playTrack(track: AudioTrack, atVolume volume: Float) {
+        let trackId = track.id
+        let songId = song!.id
+        
         players.removeAll()
         var path: NSURL
         do {
-            path = AudioCache.trackPath(track, parentSong: song!)
+            path = AudioCache.trackPath(trackId, parentSongId: songId)
             let player = try AVAudioPlayer(contentsOfURL: path)
             player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
             player.delegate = self
@@ -416,17 +432,23 @@ extension SongMixerViewController: TrackControllerDelegate {
 
     }
     func changeTrackVolumne(track: AudioTrack, newVolume volume: Float) {
+        let trackId = track.id
+        let songId = song!.id
         //TODO: this is problematic..heavy processing here for every minute change in the slider
         //  need to rework some of this..
         track.mixVolume = volume
-        if let player = players.filter( { $0.url! == AudioCache.trackPath(track, parentSong: song!) } ).first {
+        if let player = players.filter( { $0.url! == AudioCache.trackPath(trackId, parentSongId: songId) } ).first {
             player.volume = Float(track.mixVolume)
             dataIsDirty = true
         } 
     }
+    
     func muteTrackPlayback(track: AudioTrack, doMute: Bool) {
+        let trackId = track.id
+        let songId = song!.id
+        
         track.isMuted = doMute
-        if let player = players.filter( { $0.url! == AudioCache.trackPath(track, parentSong: song!) } ).first {
+        if let player = players.filter( { $0.url! == AudioCache.trackPath(trackId, parentSongId: songId) } ).first {
             player.volume = doMute ? 0.0 : Float(track.mixVolume)
         } else {
             print("couldnt find the player of the track to MUTE")
@@ -440,11 +462,14 @@ extension SongMixerViewController: MasterPlaybackControllerDelegate {
     }
     
     func playMixImplementation(cell: MasterTableViewCell) {
+        let songId = song!.id
+        
         players.removeAll()
         var path: NSURL
         for track in song.tracks {
+            let trackId = track.id
             do {
-                path = AudioCache.trackPath(track, parentSong: song!)
+                path = AudioCache.trackPath(trackId, parentSongId: songId)
                 let player = try AVAudioPlayer(contentsOfURL: path)
                 player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
                 player.delegate = self

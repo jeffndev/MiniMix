@@ -17,7 +17,7 @@ class SearchSongsCell: UITableViewCell {
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     var delegate: SongSearchPlaybackDelegate?
-    var songInfo: SongMixLite?
+    var songInfo: SongMixDTO?
     
     @IBAction func playMix() {
         guard let delegate = delegate, let songInfo = songInfo else {

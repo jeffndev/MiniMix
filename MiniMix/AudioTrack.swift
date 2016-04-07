@@ -103,7 +103,7 @@ class AudioTrack: NSManagedObject {
             return
         }
         do {
-            try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(self, parentSong: parentSong).path!)
+            try NSFileManager.defaultManager().removeItemAtPath(AudioCache.trackPath(id, parentSongId: parentSong.id).path!)
         } catch let deleteTrackErr as NSError {
             print("Failed to delete track file: \(deleteTrackErr)")
         }

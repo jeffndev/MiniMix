@@ -69,7 +69,8 @@ class CommunityMixesListViewController: SongListViewController {
         if let artistNameLbl =  cell.artistName, let artist = song.artist {
             artistNameLbl.text = "artist: \(artist.socialName)"
         }
-        cell.contentView.alpha = song.keepPrivate ? 0.3 : 1.0
+        //cell.contentView.alpha = song.keepPrivate ? 0.3 : 1.0
+        cell.setPrivateState(song.keepPrivate)
     }
 }
 
@@ -78,6 +79,11 @@ extension CommunityMixesListViewController {
     
     
     override func playSong(cell: SongListingTableViewCell, song: SongMix) {
+        let songId = song.id
+        let songRemoteUrl = song.mixFileUrl
+        let currentEmail = currentUser.email
+        let currentPwd = currentUser.servicePassword
+        
         //check if private, don't play if so...and possibly..erase from the db?
         guard currentPlayingCellRef == nil else {
             print("another mix is playing..have to wait")
@@ -90,7 +96,7 @@ extension CommunityMixesListViewController {
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)){
             //verify signin
             let api = MiniMixCommunityAPI()
-            api.verifyAuthTokenOrSignin(self.currentUser.email, password: self.currentUser.servicePassword) { success, message, error in
+            api.verifyAuthTokenOrSignin(currentEmail, password: currentPwd) { success, message, error in
                 guard success else {
                     self.currentPlayingCellRef = nil
                     dispatch_async(dispatch_get_main_queue()) {
@@ -102,7 +108,7 @@ extension CommunityMixesListViewController {
                     return
                 }
                 //check song privacy
-                api.checkIfSongIsPrivate(song) { success, istrue, message, error in
+                api.checkIfSongIsPrivate(songId) { success, istrue, message, error in
                     guard success, let isprivate = istrue else {
                         self.currentPlayingCellRef = nil
                         dispatch_async(dispatch_get_main_queue()) {
@@ -117,12 +123,13 @@ extension CommunityMixesListViewController {
                     }
                     if !isprivate {
                         //download file, prepare and play..manage cell ui state
-                        self.downloadAndPlaySong(cell, song: song)
+                        self.downloadAndPlaySong(cell, songUrlPath: songRemoteUrl)
                     } else {
                         self.currentPlayingCellRef = nil
                         dispatch_async(dispatch_get_main_queue()){
                             cell.setReadyToPlayUIState(true)
                             cell.setBusyState(false)
+                            cell.setPrivateState(true)
                             self.showAlertMsg("Private Song", msg: "This song has been made private to the community by the artist.", posthandler: nil)
                         }
                     }
@@ -131,8 +138,8 @@ extension CommunityMixesListViewController {
         }
     }
     
-    func downloadAndPlaySong(cell: SongListingTableViewCell, song: SongMix) {
-        guard let songUrl = song.mixFileUrl else {
+    func downloadAndPlaySong(cell: SongListingTableViewCell, songUrlPath: String?) {
+        guard let songUrl = songUrlPath else {
             dispatch_async(dispatch_get_main_queue()) {
                 cell.setReadyToPlayUIState(true)
                 cell.setBusyState(false)
@@ -171,8 +178,8 @@ extension CommunityMixesListViewController {
                 player.play()
             }
             return true
-        } catch let playerErr as NSError {
-            print("couldn't create player to play the mix: \(playerErr)")
+        } catch {
+            print("couldn't create player to play the mix")
             return false
         }
     }
