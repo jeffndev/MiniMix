@@ -24,10 +24,12 @@ class SearchCommunityViewController: UIViewController {
     
     var currentUser: User!
     var currentResults = [SongMixLite]()
+    var currentlyPlayingCellRef: SearchSongsCell?
     var player: AVAudioPlayer?
-    
+    @IBOutlet weak var searchActivityIndicator: UIActivityIndicatorView!
     override func viewDidLoad() {
         super.viewDidLoad()
+        hideKeyboardWhenTappedAround()
         
         tableView.dataSource = self
         tableView.delegate = self
@@ -46,6 +48,8 @@ class SearchCommunityViewController: UIViewController {
         } else {
             abort()
         }
+        searchActivityIndicator.hidden = true
+        searchActivityIndicator.stopAnimating()
     }
 
     @IBAction func cancelSearching() {
@@ -100,6 +104,10 @@ extension SearchCommunityViewController: UITableViewDataSource, UITableViewDeleg
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier(CELL_ID) as! SearchSongsCell
         let song = currentResults[indexPath.row]
+        configureCell(cell, songSearchInfo: song)
+        return cell
+    }
+    func configureCell(cell: SearchSongsCell, songSearchInfo song: SongMixLite) {
         cell.delegate = self
         cell.songInfo = song
         cell.songArtistLabel.text = "artist: \(song.userDisplayName)"
@@ -107,7 +115,7 @@ extension SearchCommunityViewController: UITableViewDataSource, UITableViewDeleg
         cell.songNameLabel.text = song.name
         cell.setReadyToPlayUIState(true)
         cell.setDisabledStateForFailedMixPreviewDownload(false)
-        return cell
+        cell.setBusyState(false)
     }
 }
 
@@ -118,33 +126,44 @@ extension SearchCommunityViewController: UISearchBarDelegate {
             tableView.reloadData()
             return
         }
+        setBusyState(true)
         let api = MiniMixCommunityAPI()
         api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
             guard success else {
                 let msg = message ?? "Could not authenticate with the server"
                 self.showAlertMsg("Search Failure", msg: msg)
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.setBusyState(false)
+                }
                 return
             }
             api.searchSongs(searchText) { success, json, message, error in
                 //search is a non-critical feature, no error display unless specific message received from server API
                 guard error == nil else {
                     print("search error: \(error!.localizedDescription)")
+                    dispatch_async(dispatch_get_main_queue()) {
+                        self.setBusyState(false)
+                    }
                     return
                 }
                 guard success else {
                     if let msg = message {
                         print(msg)
                         dispatch_async(dispatch_get_main_queue()) {
-                            self.showAlertMsg("Search Failure", msg: msg)
+                            self.setBusyState(false)
                         }
+                        self.showAlertMsg("Search Failure", msg: msg)
                     }
                     return
                 }
                 guard let jsonResponse = json else {
                     print("json response from search not valid")
+                    dispatch_async(dispatch_get_main_queue()) {
+                        self.setBusyState(false)
+                    }
                     return
                 }
-                print(jsonResponse)
+                //print(jsonResponse)
                 
                 self.currentResults = jsonResponse.map() {
                     SongMixLite(jsonDictionary: $0)
@@ -152,42 +171,83 @@ extension SearchCommunityViewController: UISearchBarDelegate {
                 print(self.currentResults.count)
                 dispatch_async(dispatch_get_main_queue()) {
                     self.tableView.reloadData()
+                    dispatch_async(dispatch_get_main_queue()) {
+                        self.setBusyState(false)
+                    }
                 }
             }
         }
     }
     
+    func setBusyState(isBusy: Bool) {
+        searchActivityIndicator.hidden = !isBusy
+        if isBusy {
+            searchActivityIndicator.startAnimating()
+        } else {
+            searchActivityIndicator.stopAnimating()
+        }
+    }
     
     func searchBarSearchButtonClicked(searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
     }
 }
 extension SearchCommunityViewController: SongSearchPlaybackDelegate {
+    
     func playSong(cell: SearchSongsCell, song: SongMixLite) {
+        if let existingPlay = player {
+            existingPlay.stop()
+        }
+        if let playingCell = currentlyPlayingCellRef {
+            playingCell.setReadyToPlayUIState(true)
+            currentlyPlayingCellRef = nil
+        }
         if let songUrl = song.mixFileUrl {
-            do {
-                //TODO: activity indicator for file download here..
+            //activity indicator for file download here..
+            cell.setBusyState(true)
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) {
                 let songDataTry = NSData(contentsOfURL: NSURL(string: songUrl)!)
                 guard let songData = songDataTry else {
                     print("could not download song file to play")
-                    cell.setDisabledStateForFailedMixPreviewDownload(true)
+                    dispatch_async(dispatch_get_main_queue()) {
+                        cell.setBusyState(false)
+                        cell.setDisabledStateForFailedMixPreviewDownload(true)
+                    }
                     return
                 }
-                try player = AVAudioPlayer(data: songData)
-                let session = AVAudioSession.sharedInstance()
-                try session.setCategory(AVAudioSessionCategoryPlayback)
-                if let player = player {
-                    if player.playing { player.stop() }
-                    player.play()
-                }
+                self.downloadAndStartPlayTask(downloadedSongData: songData, cell: cell)
+            }
+        } else {
+            cell.setDisabledStateForFailedMixPreviewDownload(true)
+        }
+    }
+
+    func downloadAndStartPlayTask(downloadedSongData songData: NSData, cell: SearchSongsCell) {
+        do {
+            try player = AVAudioPlayer(data: songData)
+            player?.delegate = self
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(AVAudioSessionCategoryPlayback)
+            if let player = player {
+                player.prepareToPlay()
+                player.play()
+            }
+            dispatch_async(dispatch_get_main_queue()) {
                 cell.setReadyToPlayUIState(false)
-            } catch let playerErr as NSError {
-                print("couldn't create player to play the mix: \(playerErr)")
+                cell.setBusyState(false)
+            }
+            currentlyPlayingCellRef = cell
+        } catch let playerErr as NSError {
+            print("couldn't create player to play the mix: \(playerErr)")
+            dispatch_async(dispatch_get_main_queue()) {
+                cell.setBusyState(false)
                 cell.setDisabledStateForFailedMixPreviewDownload(true)
             }
         }
     }
+    
     func stopSong(cell: SearchSongsCell, song: SongMixLite) {
+        currentlyPlayingCellRef = nil
         if let player = player {
             player.stop()
         }
@@ -252,6 +312,22 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
 }
 extension SearchCommunityViewController: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully flag: Bool) {
-        
+        if let cell = currentlyPlayingCellRef {
+            currentlyPlayingCellRef = nil
+            dispatch_async(dispatch_get_main_queue()) {
+                cell.setBusyState(false)
+                cell.setReadyToPlayUIState(true)
+            }
+        }
+    }
+}
+extension SearchCommunityViewController {
+    func hideKeyboardWhenTappedAround() {
+        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(SearchCommunityViewController.dismissKeyboard))
+        view.addGestureRecognizer(tap)
+    }
+    
+    func dismissKeyboard() {
+        view.endEditing(true)
     }
 }

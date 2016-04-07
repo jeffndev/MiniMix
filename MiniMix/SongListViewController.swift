@@ -22,6 +22,7 @@ class SongListViewController: UIViewController {
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var shareButton: UIBarButtonItem!
     @IBOutlet weak var cloudSyncButton: UIBarButtonItem!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     var currentUser: User!
     var players = [AVAudioPlayer]()
@@ -68,6 +69,8 @@ class SongListViewController: UIViewController {
         if let shareButton = shareButton {
             shareButton.enabled = false
         }
+        activityIndicator.hidden = true
+        activityIndicator.stopAnimating()
     }
     
     //MARK: Fetched Results Controllers And Core Data helper objects
@@ -128,6 +131,10 @@ class SongListViewController: UIViewController {
     func cloudSyncTask() {
         //main purpose is to pull down existing mixes for this user after re-registering
         //step 1.  for each song in the viewed songs, update any versions (UPSYNC)
+        dispatch_async(dispatch_get_main_queue()) {
+            self.activityIndicator.hidden = false
+            self.activityIndicator.startAnimating()
+        }
         let songs = songsFetchedResultsControllerForUser.fetchedObjects as! [SongMix]
         var songIdSet = Set<String>()
         for song in songs {
@@ -139,11 +146,17 @@ class SongListViewController: UIViewController {
         api.getMyUploadedSongs() { success, jsonResponseArr, message, error in
             guard error == nil else {
                 print("search error: \(error!.localizedDescription)")
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.activityIndicator.hidden = true
+                    self.activityIndicator.stopAnimating()
+                }
                 return
             }
             guard success else {
                 if let msg = message {
                     dispatch_async(dispatch_get_main_queue()) {
+                        self.activityIndicator.hidden = true
+                        self.activityIndicator.stopAnimating()
                         self.showAlertMsg("Sync Songs Failure", msg: msg, posthandler: nil)
                     }
                 }
@@ -151,6 +164,8 @@ class SongListViewController: UIViewController {
             }
             guard let songArray = jsonResponseArr else {
                 dispatch_async(dispatch_get_main_queue()) {
+                    self.activityIndicator.hidden = true
+                    self.activityIndicator.stopAnimating()
                     self.showAlertMsg("Sync Songs Failure", msg: "Server error", posthandler: nil)
                 }
                 return
@@ -170,12 +185,15 @@ class SongListViewController: UIViewController {
                                 let track = AudioTrack(dictionary: $0, context: sharedContext)
                                 track.song = song
                                 dispatch_async(backgroundQueue) {
-                                    self.downSyncUserTrackFile(track)                                }
+                                    self.downSyncUserTrackFile(track)
+                                }
                             }
                         }
                     }
                 }
                 CoreDataStackManager.sharedInstance.saveContext()
+                self.activityIndicator.hidden = true //NOTE: some files may be still uploading, but they are meant to be background...
+                self.activityIndicator.stopAnimating()
             }
         }
     }
@@ -338,7 +356,6 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func toCloudAction(indexPath: NSIndexPath) {
         let song = songsFetchedResultsControllerForUser.objectAtIndexPath(indexPath) as! SongMix
-        let cell = tableView.cellForRowAtIndexPath(indexPath)
         if !currentUser.isRegistered || currentUser.email.isEmpty || currentUser.servicePassword.isEmpty {
             doSignUp() {
                 self.toCloudHandler(song)
@@ -576,6 +593,7 @@ extension SongListViewController: NSFetchedResultsControllerDelegate {
         cell.song = song
         cell.delegate = self
         cell.setUploadedState(song.wasUploaded)
+        cell.setBusyState(false)
         
         if let artist = song.artist where artist.isMe && song.wasUploaded {
             //Check if YOUR song has changed (higher version), should Sync to Cloud...but only for YOUR songs

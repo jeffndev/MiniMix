@@ -21,6 +21,7 @@ class SongListingTableViewCell: UITableViewCell {
     
     @IBOutlet weak var stopButton: UIButton!
     @IBOutlet weak var playButton: UIButton!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     var delegate: SongPlaybackDelegate!
     var song: SongMix!
@@ -63,5 +64,16 @@ class SongListingTableViewCell: UITableViewCell {
             syncButton.layer.borderWidth = 0
             syncButton.hidden = !wasUploaded
         }
+    }
+    func setBusyState(isBusy: Bool) {
+        if let activityIndicator = activityIndicator {
+            activityIndicator.hidden = !isBusy
+            if isBusy {
+                activityIndicator.startAnimating()
+            } else {
+                activityIndicator.stopAnimating()
+            }
+        }
+        self.contentView.alpha = isBusy ? 0.3 : 1.0
     }
 }

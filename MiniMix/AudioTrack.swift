@@ -23,17 +23,11 @@ class AudioTrack: NSManagedObject {
         static let TrackFileRemoteUrl = "track_file_url"
         static let S3RandomId = "s3_random_id"
     }
-    //TODO: may not be neded, since the song is not really a Track,
-    //   and the actual files are stored separately..
-    struct TrackType {
-        static let MIX = "mix"
-        static let MASTER = "master"
-    }
     
     @NSManaged var id: String//NSUUID
     @NSManaged var name: String
     @NSManaged var createDate: NSDate
-    //@NSManaged var trackType: String //TrackType
+    
     @NSManaged var displayOrder: Int32
     @NSManaged var trackDescription: String?
     @NSManaged var lengthSeconds: NSNumber? //Double?
@@ -42,6 +36,8 @@ class AudioTrack: NSManagedObject {
     @NSManaged var song: SongMix?
     @NSManaged var trackFileUrl: String?
     @NSManaged var s3RandomId: String?
+    //@NSManaged var nudge_value: NSNumber // Float, TODO: version 2.0 feature, nudge tracks over to better sync playback
+    
     var isMuted = false //non-persistant
 
     var wasUploaded: Bool {
@@ -82,7 +78,7 @@ class AudioTrack: NSManagedObject {
         s3RandomId = dictionary[AudioTrack.Keys.S3RandomId] as? String
     }
     
-    init(trackName: String, trackType: String, trackOrder: Int32, insertIntoManagedObjectContext context: NSManagedObjectContext) {
+    init(trackName: String, trackOrder: Int32, insertIntoManagedObjectContext context: NSManagedObjectContext) {
         let entity = NSEntityDescription.entityForName("AudioTrack", inManagedObjectContext: context)!
         super.init(entity: entity, insertIntoManagedObjectContext: context)
         
@@ -93,7 +89,6 @@ class AudioTrack: NSManagedObject {
         hasRecordedFile = false
         //
         name = trackName
-        //self.trackType = (trackType == TrackType.MIX ? TrackType.MIX : TrackType.MASTER)
         displayOrder = trackOrder
     }
     

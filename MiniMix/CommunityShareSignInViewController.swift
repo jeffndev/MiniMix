@@ -14,6 +14,7 @@ class CommunityShareSignInViewController: UIViewController {
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var publicMonikerTextField: UITextField!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     var currentUser: User!
     var postSigninCompletion: (() -> Void)?
@@ -41,6 +42,7 @@ class CommunityShareSignInViewController: UIViewController {
         emailTextField.text = currentUser.email
         passwordTextField.text = currentUser.servicePassword
         publicMonikerTextField.text = currentUser.socialName
+        activityIndicator.hidden = true
     }
     
     //MARK: Core Data helper objects..
@@ -62,6 +64,7 @@ class CommunityShareSignInViewController: UIViewController {
     
     //MARK: Action handlers...
     @IBAction func cancelAction() {
+        activityIndicator.stopAnimating()
         dismissViewControllerAnimated(true, completion: nil)
     }
     
@@ -78,8 +81,12 @@ class CommunityShareSignInViewController: UIViewController {
             publicMonikerTextField.placeholder = "Please Enter Your Public Name!"
             return
         }
+        activityIndicator.hidden = false
+        activityIndicator.hidesWhenStopped = true
+        activityIndicator.startAnimating()
         let api = MiniMixCommunityAPI()
         api.registerNewUser(email, password: password, publicName: moniker) { success, jsonDictionary, message, error in
+            self.activityIndicator.stopAnimating()
             //respond here to errors that are network and api related and when they should try again...
             if !success && error != nil {
                 switch error!.code {

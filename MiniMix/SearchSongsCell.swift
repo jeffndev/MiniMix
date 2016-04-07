@@ -14,6 +14,7 @@ class SearchSongsCell: UITableViewCell {
     @IBOutlet weak var songArtistLabel: UILabel!
     @IBOutlet weak var songNameLabel: UILabel!
     @IBOutlet weak var genreLabel: UILabel!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     var delegate: SongSearchPlaybackDelegate?
     var songInfo: SongMixLite?
@@ -22,6 +23,7 @@ class SearchSongsCell: UITableViewCell {
         guard let delegate = delegate, let songInfo = songInfo else {
             return
         }
+        
         delegate.playSong(self, song: songInfo)
     }
     @IBAction func stopPlay() {
@@ -46,5 +48,14 @@ class SearchSongsCell: UITableViewCell {
         self.playButton.hidden = !ready
         self.stopButton.hidden = ready
         self.playButton.enabled = ready
+    }
+    func setBusyState(isBusy: Bool) {
+        activityIndicator.hidden = !isBusy
+        if isBusy {
+            activityIndicator.startAnimating()
+        } else {
+            activityIndicator.stopAnimating()
+        }
+        self.contentView.alpha = isBusy ? 0.3 : 1.0 
     }
 }

@@ -30,7 +30,7 @@ class SongMixerViewController: UITableViewController {
     
     let TRACKS_SECTION = 0
     let MASTER_SECTION = 1
-    
+    let NO_MORE_HEADPHONE_WARNING_KEY = "NoMoreHeadphonesForMultitrackWarning"
     var song: SongMix! {
         didSet {
             dataIsDirty = false
@@ -58,7 +58,7 @@ class SongMixerViewController: UITableViewController {
         
         if let songs = tracksFetchedResultsControllerForSong.fetchedObjects {
             if songs.isEmpty {
-                let track = AudioTrack(trackName: "Audio 1", trackType: AudioTrack.TrackType.MIX, trackOrder: 0, insertIntoManagedObjectContext: sharedContext)
+                let track = AudioTrack(trackName: "Audio 1", trackOrder: 0, insertIntoManagedObjectContext: sharedContext)
                 track.song = song
                 CoreDataStackManager.sharedInstance.saveContext()
             }
@@ -137,13 +137,43 @@ class SongMixerViewController: UITableViewController {
         }
         let trackCount = fetchedTracks.count
         if trackCount < MAX_TRACKS {
-            let newTrack = AudioTrack(trackName: "Audio \(trackCount + 1)", trackType: AudioTrack.TrackType.MIX, trackOrder: Int32(trackCount), insertIntoManagedObjectContext: sharedContext)
+            let newTrack = AudioTrack(trackName: "Audio \(trackCount + 1)", trackOrder: Int32(trackCount), insertIntoManagedObjectContext: sharedContext)
             newTrack.song = song
             dataIsDirty = true
             CoreDataStackManager.sharedInstance.saveContext()
+            headphonesWarningCheck()
+        }
+    }
+    func headphonesWarningCheck() {
+        let defaults = NSUserDefaults.standardUserDefaults()
+        let noHeadphonesCheck = defaults.boolForKey(NO_MORE_HEADPHONE_WARNING_KEY) ?? false
+        if !noHeadphonesCheck && !headphonesAreOn() {
+            let alert = UIAlertController(title: "Headphone Warning", message: "MiniMix suggests using headphones for multitrack recording", preferredStyle: .Alert)
+            let okAction = UIAlertAction(title: "OK", style: .Default) { action in
+                defaults.setBool(false, forKey: self.NO_MORE_HEADPHONE_WARNING_KEY)
+                self.dismissViewControllerAnimated(true, completion: nil)
+                self.dismissViewControllerAnimated(true, completion: nil)
+            }
+            alert.addAction(okAction)
+            let dontTellAgainAction = UIAlertAction(title: "Don't Tell Me Again", style: .Default) { action in
+                defaults.setBool(true, forKey: self.NO_MORE_HEADPHONE_WARNING_KEY)
+                self.dismissViewControllerAnimated(true, completion: nil)
+            }
+            alert.addAction(dontTellAgainAction)
+            alert.popoverPresentationController?.sourceView = self.view
+            self.presentViewController(alert, animated: true, completion: nil)
         }
     }
     
+    func headphonesAreOn() -> Bool {
+        let route = AVAudioSession.sharedInstance().currentRoute
+        for output in route.outputs {
+            if output.portType == AVAudioSessionPortHeadphones {
+                return true
+            }
+        }
+        return false
+    }
 
     // MARK: TableView delegates
     

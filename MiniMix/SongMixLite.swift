@@ -8,8 +8,9 @@
 
 import Foundation
 
-struct SongMixLite {
+struct SongMixLite { //CHANGE to SongMixSearchState
     
+    //SongInfo
     var id: String //NSUUID
     var name: String
     var createDate: NSDate
