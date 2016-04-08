@@ -72,7 +72,9 @@ class SongInfoViewController: UIViewController {
     var sharedContext: NSManagedObjectContext {
         return CoreDataStackManager.sharedInstance.managedObjectContext
     }
-
+    @IBAction func exitNoSave() {
+        self.dismissViewControllerAnimated(true, completion: nil)
+    }
     @IBAction func exitModal(sender: UIBarButtonItem) {
         if let song = song {
             song.name = songNameTextField.text!

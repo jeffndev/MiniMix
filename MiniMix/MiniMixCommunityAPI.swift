@@ -415,6 +415,49 @@ class MiniMixCommunityAPI {
         searchTask.resume()
 
     }
+    func getMySong(songId: String, completion: DataCompletionHander) {
+        let builtUrlString = "\(API_BASE_URL_SECURE)/my_song" + escapedParameters([SongMix.Keys.ID: songId])
+        let url = NSURL(string: builtUrlString)!
+        let request = NSMutableURLRequest(URL: url)
+        request.HTTPMethod = "GET"
+        //add headers
+        request.addValue( buildAuthorizationHdr(.HTTPTokenAuth), forHTTPHeaderField: "Authorization")
+        
+        let session = NSURLSession.sharedSession()
+        let task = session.dataTaskWithRequest(request) { data, response, error in
+            guard error == nil else {
+                completion!(success: false, jsonData: nil, message: "error recevied from data task", error: error)
+                return
+            }
+            guard let data = data else {
+                completion!(success: false, jsonData: nil, message: "data from JSON request came up empty", error: error)
+                return
+            }
+            //print(data)
+            var parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch let jsonError as NSError {
+                completion!(success: false, jsonData: nil, message: "get my uploaded song failed to return parseable json", error: jsonError)
+                return
+            }
+            print("getMySongs returned json:")
+            print(parsedResult)
+            if let jsonObject = parsedResult as? [String: AnyObject] {
+                if let status = jsonObject["status"] as? Int where status > 299 || status < 200 {
+                    let msg = (jsonObject["message"] as? String) ?? ""
+                    completion!(success: false, jsonData: nil, message: msg, error: nil)
+                    return
+                }
+            }
+            guard let parsedJson = parsedResult as? [String: AnyObject] else {
+                completion!(success: false, jsonData: nil, message: "get my uploaded song failed to return parseable json array", error: nil)
+                return
+            }
+            completion!(success: true, jsonData: parsedJson, message: nil, error: nil)
+        }
+        task.resume()
+    }
     
     func getMyUploadedSongs(completion: DataArrayCompletionHander) {
         let builtUrlString = "\(API_BASE_URL_SECURE)/my_uploaded_songs"

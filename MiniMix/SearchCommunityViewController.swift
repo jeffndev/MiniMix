@@ -315,59 +315,36 @@ extension SearchCommunityViewController: SongSearchPlaybackDelegate {
             dispatch_async(backgroundQueue) {
                 AudioCache.downSyncUserSongFile(songId, songName: songName, songFileRemoteUrl: mixUrl)
             }
-            //TODO: missing track info...either 1. go get track info from another api call or 2. return track info for every search...
+            let api = MiniMixCommunityAPI()
+            api.getMySong(songId) { success, json, message, error in
+                guard success && error == nil else {
+                    print("Could not get song information to download tracks")
+                    return
+                }
+                guard let jsonReturned = json else {
+                    return
+                }
+                print(jsonReturned)
+                guard let tracks = jsonReturned["audio_tracks"] as? [[String: AnyObject]] else {
+                    return
+                }
+                dispatch_async(dispatch_get_main_queue()) {
+                    let _ = tracks.map() {
+                        let track = AudioTrack(dictionary: $0, context: sharedContext)
+                        track.song = song
+                        let trackId = track.id
+                        let trackUrl = track.trackFileUrl
+                        dispatch_async(backgroundQueue) {
+                            AudioCache.downSyncUserTrackFile(trackId, parentSongId: songId, trackRemoteUrl: trackUrl)
+                        }
+                    }
+                }
+                
+            }
         }
         
     }
 }
-
-
-
-//dispatch_async(dispatch_get_main_queue()) {
-//    let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
-//    let sharedContext = CoreDataStackManager.sharedInstance.managedObjectContext
-//    let _ = songArray.map() {
-//        if !mySongIdSet.contains($0[SongMix.Keys.ID] as! String) {
-//            let song = SongMix(jsonDictionary: $0, context: sharedContext)
-//            let songId = song.id
-//            let songName = song.name
-//            let mixUrl = song.mixFileUrl
-//            dispatch_async(backgroundQueue) {
-//                AudioCache.downSyncUserSongFile(songId, songName: songName, songFileRemoteUrl: mixUrl)
-//            }
-//            song.artist = self.currentUser
-//            if let tracks = $0["audio_tracks"] as? [[String: AnyObject]] {
-//                let _ = tracks.map() {
-//                    let track = AudioTrack(dictionary: $0, context: sharedContext)
-//                    track.song = song
-//                    let trackId = track.id
-//                    let trackUrl = track.trackFileUrl
-//                    dispatch_async(backgroundQueue) {
-//                        AudioCache.downSyncUserTrackFile(trackId, parentSongId: songId, trackRemoteUrl: trackUrl)
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    CoreDataStackManager.sharedInstance.saveContext()
-//    self.activityIndicator.hidden = true //NOTE: some files may be still uploading, but they are meant to be background...
-//    self.activityIndicator.stopAnimating()
-//}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 extension SearchCommunityViewController: AVAudioPlayerDelegate {
