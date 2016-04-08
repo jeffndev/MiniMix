@@ -8,7 +8,9 @@
 
 import UIKit
 import CoreData
-
+//TODO: so the feedback is There Should Be A Login/Logout functionality...
+//      at very least, it may be more clear to do a Sign-In then a "Dont Have an Account? Register for MiniMix Community!"
+//        
 class CommunityShareSignInViewController: UIViewController {
 
     @IBOutlet weak var emailTextField: UITextField!
@@ -86,9 +88,11 @@ class CommunityShareSignInViewController: UIViewController {
         activityIndicator.startAnimating()
         let api = MiniMixCommunityAPI()
         api.registerNewUser(email, password: password, publicName: moniker) { success, jsonDictionary, message, error in
-            self.activityIndicator.stopAnimating()
             //respond here to errors that are network and api related and when they should try again...
             if !success && error != nil {
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.activityIndicator.stopAnimating()
+                }
                 switch error!.code {
                 case MiniMixCommunityAPI.ErrorCodes.API_ERROR:
                     var vmessage = message
@@ -106,7 +110,8 @@ class CommunityShareSignInViewController: UIViewController {
                     self.showAlert("Network Error", message: vmessage!)
                     return
                 default:
-                    break
+                    self.showAlert("Registration Connection Error", message: "Could not register with MiniMix, please try again")
+                    return
                 }
             }
             var displayName = moniker
@@ -121,6 +126,7 @@ class CommunityShareSignInViewController: UIViewController {
                 self.currentUser.servicePassword = success ? password : ""
                 self.currentUser.socialName = success ? displayName : ""
                 CoreDataStackManager.sharedInstance.saveContext()
+                self.activityIndicator.stopAnimating()
                 self.dismissViewControllerAnimated(true, completion: self.postSigninCompletion) //MARK: postSignup Completion...
             }
         }
