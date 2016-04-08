@@ -23,7 +23,7 @@ class SongListViewController: UIViewController {
     @IBOutlet weak var shareButton: UIBarButtonItem!
     @IBOutlet weak var cloudSyncButton: UIBarButtonItem!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
-    
+     
     var currentUser: User!
     var players = [AVAudioPlayer]()
     var currentPlayingCellRef: SongListingTableViewCell!
@@ -71,6 +71,12 @@ class SongListViewController: UIViewController {
         }
         activityIndicator.hidden = true
         activityIndicator.stopAnimating()
+        cloudSyncButton?.enabled = currentUser.isRegistered
+        guard let _ = self as? CommunityMixesListViewController else {
+            navigationItem.prompt = currentUser.socialName.isEmpty ?  "My Mixes" : "\(currentUser.socialName) Mixes"
+            return
+        }
+        
     }
     
     //MARK: Fetched Results Controllers And Core Data helper objects
@@ -125,7 +131,9 @@ class SongListViewController: UIViewController {
                 self.showAlertMsg("Cloud Sync Failure", msg: msg, posthandler: nil)
                 return
             }
-            self.cloudSyncTask()
+            dispatch_async(dispatch_get_main_queue()) {
+                self.cloudSyncTask()
+            }
         }
     }
     func cloudSyncTask() {
@@ -137,11 +145,11 @@ class SongListViewController: UIViewController {
         }
         let songs = songsFetchedResultsControllerForUser.fetchedObjects as! [SongMix]
         var mySongIdSet = Set<String>()
-        dispatch_sync(dispatch_get_main_queue()) {
-            for song in songs {
-                mySongIdSet.insert(song.id)
-            }
+        
+        for song in songs {
+            mySongIdSet.insert(song.id)
         }
+
         for song in songs {
             cloudUploadTasks(song) //server handles version and only updates what's necessary..
         }
@@ -333,8 +341,11 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func toCloudHandler(song: SongMix) {
+        let currentEmail = currentUser.email
+        let currentPwd = currentUser.servicePassword
+        
         let api = MiniMixCommunityAPI()
-        api.verifyAuthTokenOrSignin(currentUser.email, password: currentUser.servicePassword) { success, message, error in
+        api.verifyAuthTokenOrSignin(currentEmail, password: currentPwd) { success, message, error in
             guard success else {
                 let msg = message ?? "Could not authenticate with the server"
                 self.showAlertMsg("Upload Failure", msg: msg, posthandler: nil)
@@ -343,17 +354,17 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
             if #available(iOS 8.0, *) {
                 let alert = UIAlertController(title: "Share to Cloud", message: nil, preferredStyle: .Alert) //maybe .Alert style better??
                 let shareWithCommunity = UIAlertAction(title: "Share with Community", style: .Default) { action in
-                    dispatch_sync(dispatch_get_main_queue()) {
+                    dispatch_async(dispatch_get_main_queue()) {
                         song.keepPrivate = false
+                        self.cloudUploadTasks(song)
                     }
-                    self.cloudUploadTasks(song)
                 }
                 alert.addAction(shareWithCommunity)
                 let savePrivate = UIAlertAction(title: "Save as Private", style: .Default) { action in
-                    dispatch_sync(dispatch_get_main_queue()) {
+                    dispatch_async(dispatch_get_main_queue()) {
                         song.keepPrivate = true
+                        self.cloudUploadTasks(song)
                     }
-                    self.cloudUploadTasks(song)
                 }
                 alert.addAction(savePrivate)
                 dispatch_async(dispatch_get_main_queue()) {
@@ -372,10 +383,9 @@ extension SongListViewController: UITableViewDataSource, UITableViewDelegate {
     func cloudUploadTasks(song: SongMix) {
         var coreRecordedTracksTry: [AudioTrack]?
         var songDtoTry: SongMixDTO?
-        dispatch_sync(dispatch_get_main_queue()) {
-            coreRecordedTracksTry = song.tracks.filter { $0.hasRecordedFile }
-            songDtoTry = SongMixDTO(songObject: song, includeTrackInfo: true)
-        }
+        coreRecordedTracksTry = song.tracks.filter { $0.hasRecordedFile }
+        songDtoTry = SongMixDTO(songObject: song, includeTrackInfo: true)
+        
         guard let songDto = songDtoTry, coreRecordedTracks = coreRecordedTracksTry else {
             return
         }
@@ -506,7 +516,9 @@ extension SongListViewController: SongPlaybackDelegate {
                 self.showAlertMsg("Sync Upload Failure", msg: msg, posthandler: nil)
                 return
             }
-            self.cloudUploadTasks(song)
+            dispatch_async(dispatch_get_main_queue()) {
+                self.cloudUploadTasks(song)
+            }
         }
     }
 }

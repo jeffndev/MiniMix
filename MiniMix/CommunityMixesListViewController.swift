@@ -19,12 +19,7 @@ class CommunityMixesListViewController: SongListViewController {
     //MARK: Lifecycle overrides...
     override func viewDidLoad() {
         super.viewDidLoad()
-        if !currentUser.socialName.isEmpty {
-            let lbl = UILabel()
-            lbl.text = "mix artist: \(currentUser.socialName)"
-            lbl.sizeToFit()
-            navigationItem.leftBarButtonItem = UIBarButtonItem(customView: lbl)
-        }
+        
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -32,6 +27,7 @@ class CommunityMixesListViewController: SongListViewController {
         searchButton.enabled = true
         activityIndicator.hidden = true
         activityIndicator.stopAnimating()
+        navigationItem.prompt = "Community Mixes"
     }
     
     //MARK: Fetched Results Controllers And Core Data helper objects

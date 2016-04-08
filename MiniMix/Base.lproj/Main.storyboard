@@ -26,7 +26,7 @@
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="TrackCell" rowHeight="136" id="Pcp-v2-r98" customClass="TrackTableViewCell" customModule="MiniMix" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="92" width="600" height="136"/>
+                                <rect key="frame" x="0.0" y="122" width="600" height="136"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Pcp-v2-r98" id="fki-aK-MSc">
                                     <rect key="frame" x="0.0" y="0.0" width="600" height="135.5"/>
@@ -168,7 +168,7 @@
                                 </connections>
                             </tableViewCell>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="MasterCell" rowHeight="116" id="Vte-dk-dy3" customClass="MasterTableViewCell" customModule="MiniMix" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="228" width="600" height="116"/>
+                                <rect key="frame" x="0.0" y="258" width="600" height="116"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="Vte-dk-dy3" id="Yf3-lJ-IEf">
                                     <rect key="frame" x="0.0" y="0.0" width="600" height="115.5"/>
@@ -451,10 +451,10 @@
                         <viewControllerLayoutGuide type="bottom" id="rUN-Kh-mO7"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="byt-Iq-7YW">
-                        <rect key="frame" x="0.0" y="64" width="600" height="536"/>
+                        <rect key="frame" x="0.0" y="94" width="600" height="506"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="110" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="U2O-PT-aGH">
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" misplaced="YES" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="110" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="U2O-PT-aGH">
                                 <rect key="frame" x="0.0" y="0.0" width="600" height="492"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <prototypes>
@@ -582,7 +582,7 @@
                                     </tableViewCell>
                                 </prototypes>
                             </tableView>
-                            <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="c0h-PJ-td6">
+                            <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" misplaced="YES" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="c0h-PJ-td6">
                                 <rect key="frame" x="290" y="258" width="20" height="20"/>
                             </activityIndicatorView>
                         </subviews>
@@ -598,14 +598,14 @@
                     </view>
                     <extendedEdge key="edgesForExtendedLayout" bottom="YES"/>
                     <toolbarItems/>
-                    <navigationItem key="navigationItem" title="MiniMix" id="rtF-fT-sEG">
+                    <navigationItem key="navigationItem" title="MiniMix" prompt="My Mixes" id="rtF-fT-sEG">
                         <barButtonItem key="leftBarButtonItem" image="cloudSync" id="q79-KB-eR1">
                             <connections>
                                 <action selector="cloudReSyncAction" destination="Mlb-fq-5Jo" id="8HV-dY-UTF"/>
                             </connections>
                         </barButtonItem>
                         <rightBarButtonItems>
-                            <barButtonItem systemItem="add" id="zfE-gu-7AG">
+                            <barButtonItem image="addMix" id="zfE-gu-7AG">
                                 <connections>
                                     <action selector="addNewSong" destination="Mlb-fq-5Jo" id="xfu-f9-ubd"/>
                                 </connections>
@@ -936,20 +936,6 @@
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no"/>
                             </textField>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vs1-l0-ta5">
-                                <rect key="frame" x="41" y="526" width="519" height="32"/>
-                                <color key="backgroundColor" red="0.38823529411764707" green="0.70196078431372544" blue="0.13725490196078433" alpha="1" colorSpace="calibratedRGB"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="32" id="DKV-nu-2ga"/>
-                                </constraints>
-                                <fontDescription key="fontDescription" type="boldSystem" pointSize="15"/>
-                                <state key="normal" title="Register Your Account">
-                                    <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                </state>
-                                <connections>
-                                    <action selector="registerAction" destination="z3g-k0-kVf" eventType="touchUpInside" id="zx1-Uz-Y18"/>
-                                </connections>
-                            </button>
                             <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="JBY-DA-PS1">
                                 <rect key="frame" x="0.0" y="20" width="600" height="44"/>
                                 <constraints>
@@ -983,25 +969,62 @@
                             <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="fJb-tA-UKn">
                                 <rect key="frame" x="290" y="290" width="20" height="20"/>
                             </activityIndicatorView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="smQ-90-qkf">
+                                <rect key="frame" x="182" y="545" width="236" height="30"/>
+                                <fontDescription key="fontDescription" type="system" weight="medium" pointSize="15"/>
+                                <state key="normal" title="Don't have an account? Tap Here!">
+                                    <color key="titleColor" red="0.10588235294117647" green="0.42352941176470588" blue="0.5725490196078431" alpha="1" colorSpace="calibratedRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="changeToRegistrationModeAction" destination="z3g-k0-kVf" eventType="touchUpInside" id="Q0q-d2-etc"/>
+                                </connections>
+                            </button>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="greenCheck" translatesAutoresizingMaskIntoConstraints="NO" id="crF-mU-kXo">
+                                <rect key="frame" x="265" y="390" width="70" height="70"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="70" id="4mP-wT-Fkb"/>
+                                    <constraint firstAttribute="height" constant="70" id="H0i-oB-uBK"/>
+                                </constraints>
+                            </imageView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vs1-l0-ta5">
+                                <rect key="frame" x="41" y="487" width="519" height="32"/>
+                                <color key="backgroundColor" red="0.38823529411764707" green="0.70196078431372544" blue="0.13725490196078433" alpha="1" colorSpace="calibratedRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="32" id="DKV-nu-2ga"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="boldSystem" pointSize="15"/>
+                                <state key="normal" title="Register Your Account">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <connections>
+                                    <action selector="registerOrSigninAction" destination="z3g-k0-kVf" eventType="touchUpInside" id="G8q-Nh-HUG"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
+                            <constraint firstItem="crF-mU-kXo" firstAttribute="centerX" secondItem="Arb-B5-Kf4" secondAttribute="centerX" id="1ZR-4s-7oT"/>
                             <constraint firstItem="fJb-tA-UKn" firstAttribute="centerY" secondItem="Arb-B5-Kf4" secondAttribute="centerY" id="4hm-zh-jx9"/>
                             <constraint firstAttribute="trailingMargin" secondItem="JBY-DA-PS1" secondAttribute="trailing" constant="-20" id="5sS-JB-EQm"/>
+                            <constraint firstItem="vs1-l0-ta5" firstAttribute="top" secondItem="crF-mU-kXo" secondAttribute="bottom" constant="27" id="9oR-2b-XFh"/>
                             <constraint firstAttribute="trailingMargin" secondItem="htY-vv-hlM" secondAttribute="trailing" id="Ac8-N2-sMi"/>
                             <constraint firstItem="htY-vv-hlM" firstAttribute="leading" secondItem="Arb-B5-Kf4" secondAttribute="leadingMargin" id="B4H-Xg-gEa"/>
                             <constraint firstItem="JBY-DA-PS1" firstAttribute="leading" secondItem="Arb-B5-Kf4" secondAttribute="leadingMargin" constant="-20" id="FO5-r5-DpQ"/>
+                            <constraint firstItem="vs1-l0-ta5" firstAttribute="top" secondItem="smQ-90-qkf" secondAttribute="bottom" constant="22" id="JSN-9h-Lyy"/>
                             <constraint firstItem="Ylt-Rj-TaM" firstAttribute="leading" secondItem="Nni-6A-4YZ" secondAttribute="leading" id="Qf2-UY-JKu"/>
                             <constraint firstItem="htY-vv-hlM" firstAttribute="centerX" secondItem="Arb-B5-Kf4" secondAttribute="centerX" id="R1g-Xu-o56"/>
                             <constraint firstItem="Ylt-Rj-TaM" firstAttribute="top" secondItem="Nni-6A-4YZ" secondAttribute="bottom" constant="26" id="SGF-pZ-s7O"/>
+                            <constraint firstItem="smQ-90-qkf" firstAttribute="top" secondItem="vs1-l0-ta5" secondAttribute="bottom" constant="26" id="SsE-v7-l1G"/>
                             <constraint firstItem="vs1-l0-ta5" firstAttribute="trailing" secondItem="08e-4H-taC" secondAttribute="trailing" id="UMS-IF-aW6"/>
                             <constraint firstItem="vs1-l0-ta5" firstAttribute="trailing" secondItem="08e-4H-taC" secondAttribute="trailing" id="UwJ-jN-x7n"/>
                             <constraint firstItem="fJb-tA-UKn" firstAttribute="centerX" secondItem="Arb-B5-Kf4" secondAttribute="centerX" id="Zay-E5-3gS"/>
                             <constraint firstItem="Nni-6A-4YZ" firstAttribute="top" secondItem="htY-vv-hlM" secondAttribute="bottom" constant="4" id="bxY-uN-WaP"/>
+                            <constraint firstItem="smQ-90-qkf" firstAttribute="centerX" secondItem="Arb-B5-Kf4" secondAttribute="centerX" id="cUT-ce-hZ1"/>
                             <constraint firstItem="8eG-qv-qMf" firstAttribute="top" secondItem="oCy-4k-hHc" secondAttribute="bottom" constant="11" id="dGi-nP-3V2"/>
                             <constraint firstItem="XEp-9h-wNX" firstAttribute="top" secondItem="vs1-l0-ta5" secondAttribute="bottom" constant="42" id="e2I-fA-Rh2"/>
                             <constraint firstItem="Ylt-Rj-TaM" firstAttribute="trailing" secondItem="Nni-6A-4YZ" secondAttribute="trailing" id="hEE-qo-5pz"/>
                             <constraint firstItem="vs1-l0-ta5" firstAttribute="centerX" secondItem="Arb-B5-Kf4" secondAttribute="centerX" id="jaf-hR-HKp"/>
+                            <constraint firstItem="smQ-90-qkf" firstAttribute="top" secondItem="crF-mU-kXo" secondAttribute="bottom" constant="10" id="n9P-mf-pF7"/>
                             <constraint firstItem="Nni-6A-4YZ" firstAttribute="leading" secondItem="Arb-B5-Kf4" secondAttribute="leadingMargin" constant="20" id="oIl-wA-w5t"/>
                             <constraint firstAttribute="trailingMargin" secondItem="Nni-6A-4YZ" secondAttribute="trailing" constant="20" id="ofJ-LG-eUf"/>
                             <constraint firstItem="08e-4H-taC" firstAttribute="top" secondItem="Ylt-Rj-TaM" secondAttribute="bottom" constant="26" id="p4U-xG-7qy"/>
@@ -1011,19 +1034,28 @@
                             <constraint firstItem="08e-4H-taC" firstAttribute="trailing" secondItem="Ylt-Rj-TaM" secondAttribute="trailing" id="tNP-0d-7G5"/>
                             <constraint firstItem="JBY-DA-PS1" firstAttribute="top" secondItem="oCy-4k-hHc" secondAttribute="bottom" id="vmH-NN-aLN"/>
                             <constraint firstItem="htY-vv-hlM" firstAttribute="top" secondItem="JBY-DA-PS1" secondAttribute="bottom" id="xK7-SI-W3a"/>
+                            <constraint firstItem="XEp-9h-wNX" firstAttribute="top" secondItem="smQ-90-qkf" secondAttribute="bottom" constant="25" id="xz3-QL-Pqp"/>
                         </constraints>
                         <variation key="default">
                             <mask key="constraints">
+                                <exclude reference="JSN-9h-Lyy"/>
                                 <exclude reference="UMS-IF-aW6"/>
                                 <exclude reference="smt-06-jGw"/>
+                                <exclude reference="n9P-mf-pF7"/>
+                                <exclude reference="e2I-fA-Rh2"/>
                             </mask>
                         </variation>
                     </view>
                     <connections>
                         <outlet property="activityIndicator" destination="fJb-tA-UKn" id="31Z-Gg-kaF"/>
+                        <outlet property="checkImage" destination="crF-mU-kXo" id="fbr-89-hAX"/>
+                        <outlet property="doActionButton" destination="vs1-l0-ta5" id="Oml-JB-LTt"/>
                         <outlet property="emailTextField" destination="Nni-6A-4YZ" id="aCu-Ni-KwK"/>
+                        <outlet property="infoLineLabel" destination="htY-vv-hlM" id="KYy-sY-Vqp"/>
                         <outlet property="passwordTextField" destination="Ylt-Rj-TaM" id="s43-NV-Wa6"/>
                         <outlet property="publicMonikerTextField" destination="08e-4H-taC" id="d5b-xC-DvG"/>
+                        <outlet property="registrationModeButton" destination="smQ-90-qkf" id="x7a-HF-QL6"/>
+                        <outlet property="titleLabel" destination="8eG-qv-qMf" id="itk-h5-1PF"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="LOF-hT-c8j" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -1221,7 +1253,7 @@
             </objects>
             <point key="canvasLocation" x="821" y="1449"/>
         </scene>
-        <!--Community Mixes List View Controller-->
+        <!--MiniMix-->
         <scene sceneID="MFe-4C-c2d">
             <objects>
                 <viewController id="ijN-ex-icL" customClass="CommunityMixesListViewController" customModule="MiniMix" customModuleProvider="target" sceneMemberID="viewController">
@@ -1230,10 +1262,10 @@
                         <viewControllerLayoutGuide type="bottom" id="hY0-YX-Qgd"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="yRP-Mt-r2W">
-                        <rect key="frame" x="0.0" y="64" width="600" height="536"/>
+                        <rect key="frame" x="0.0" y="94" width="600" height="506"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="110" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="3t7-To-hsd">
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" misplaced="YES" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="110" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="3t7-To-hsd">
                                 <rect key="frame" x="0.0" y="0.0" width="600" height="492"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <prototypes>
@@ -1375,7 +1407,7 @@
                                     </tableViewCell>
                                 </prototypes>
                             </tableView>
-                            <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="teT-f4-Qk6">
+                            <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" misplaced="YES" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="teT-f4-Qk6">
                                 <rect key="frame" x="290" y="258" width="20" height="20"/>
                             </activityIndicatorView>
                         </subviews>
@@ -1391,7 +1423,7 @@
                     </view>
                     <extendedEdge key="edgesForExtendedLayout" bottom="YES"/>
                     <toolbarItems/>
-                    <navigationItem key="navigationItem" id="eRB-27-GFJ">
+                    <navigationItem key="navigationItem" title="MiniMix" prompt="Community Mixes" id="eRB-27-GFJ">
                         <barButtonItem key="rightBarButtonItem" systemItem="search" id="8he-cw-hcQ">
                             <connections>
                                 <action selector="doSongSearch" destination="ijN-ex-icL" id="E0A-lp-3Sz"/>
@@ -1414,11 +1446,13 @@
     <resources>
         <image name="StarEmpty" width="15" height="14"/>
         <image name="StarFull" width="16" height="16"/>
+        <image name="addMix" width="25" height="25"/>
         <image name="bigPlay" width="32" height="32"/>
         <image name="bigStop" width="256" height="256"/>
         <image name="cloudSync" width="32" height="32"/>
         <image name="cloudUpload" width="256" height="256"/>
         <image name="erase" width="24" height="24"/>
+        <image name="greenCheck" width="104" height="120"/>
         <image name="myMixesPauseButton" width="30" height="30"/>
         <image name="myMixesPlayButton" width="30" height="26"/>
         <image name="play" width="64" height="64"/>

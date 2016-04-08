@@ -339,7 +339,7 @@ extension SongMixerViewController: TrackControllerDelegate {
         let otherTracks = song.tracks.filter { $0.id != track.id }
         for track in otherTracks {
             do {
-                let player = try AVAudioPlayer(contentsOfURL: AudioCache.trackPath(trackId, parentSongId: songId))
+                let player = try AVAudioPlayer(contentsOfURL: AudioCache.trackPath(track.id, parentSongId: songId))
                 player.volume = track.isMuted ? 0.0 : Float(track.mixVolume)
                 players.append(player)
             } catch let error as NSError {

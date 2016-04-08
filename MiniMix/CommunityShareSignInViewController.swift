@@ -13,13 +13,19 @@ import CoreData
 //        
 class CommunityShareSignInViewController: UIViewController {
 
+    @IBOutlet weak var infoLineLabel: UILabel!
+    @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var publicMonikerTextField: UITextField!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
+    @IBOutlet weak var doActionButton: UIButton!
+    @IBOutlet weak var registrationModeButton: UIButton!
+    @IBOutlet weak var checkImage: UIImageView!
     
     var currentUser: User!
     var postSigninCompletion: (() -> Void)?
+    var baskInSuccessTimer: NSTimer?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -46,7 +52,9 @@ class CommunityShareSignInViewController: UIViewController {
         publicMonikerTextField.text = currentUser.socialName
         activityIndicator.hidden = true
     }
-    
+    override func viewWillAppear(animated: Bool) {
+        configureUIState(false)
+    }
     //MARK: Core Data helper objects..
     var sharedContext: NSManagedObjectContext {
         return CoreDataStackManager.sharedInstance.managedObjectContext
@@ -70,7 +78,11 @@ class CommunityShareSignInViewController: UIViewController {
         dismissViewControllerAnimated(true, completion: nil)
     }
     
-    @IBAction func registerAction() {
+    @IBAction func changeToRegistrationModeAction() {
+        configureUIState(true)
+    }
+    
+    @IBAction func registerOrSigninAction() {
         guard let email = emailTextField.text where !email.isEmpty else {
             emailTextField.placeholder = "Please Enter Your Email!"
             return
@@ -79,7 +91,7 @@ class CommunityShareSignInViewController: UIViewController {
             passwordTextField.placeholder = "Please Enter Your Password!"
             return
         }
-        guard let moniker = publicMonikerTextField.text where !moniker.isEmpty else {
+        guard let moniker = publicMonikerTextField.text where !moniker.isEmpty || publicMonikerTextField.hidden else {
             publicMonikerTextField.placeholder = "Please Enter Your Public Name!"
             return
         }
@@ -127,10 +139,20 @@ class CommunityShareSignInViewController: UIViewController {
                 self.currentUser.socialName = success ? displayName : ""
                 CoreDataStackManager.sharedInstance.saveContext()
                 self.activityIndicator.stopAnimating()
-                self.dismissViewControllerAnimated(true, completion: self.postSigninCompletion) //MARK: postSignup Completion...
+                self.showSuccessStateAndDismiss()
             }
         }
     }
+    func showSuccessStateAndDismiss() {
+        checkImage.hidden = false
+        baskInSuccessTimer?.invalidate()
+        baskInSuccessTimer = NSTimer.scheduledTimerWithTimeInterval(2, target: self, selector: #selector(doDismissWithCompletion), userInfo: nil, repeats: false)
+    }
+    func doDismissWithCompletion() {
+        baskInSuccessTimer?.invalidate()
+        dismissViewControllerAnimated(true, completion: self.postSigninCompletion)
+    }
+    
     //MARK: utility functions..
     func showAlert(title: String?, message: String) {
         if #available(iOS 8.0, *) {
@@ -143,9 +165,30 @@ class CommunityShareSignInViewController: UIViewController {
         } else {
             // Fallback on earlier versions
         }
-        
-        
-        
+    }
+    
+    func configureUIState(isRegisterState: Bool) {
+        if isRegisterState {
+            titleLabel.text = "Register with MiniMix"
+            infoLineLabel.text = "needed to access Cloud features"
+            registrationModeButton.hidden = true
+            doActionButton.setTitle("Register Your Account", forState: .Normal)
+            emailTextField.placeholder = "Enter Email to Register"
+            passwordTextField.placeholder = "Create a Password to Register"
+            publicMonikerTextField.hidden = false
+            publicMonikerTextField.placeholder = "Create Your Public Artist Name"
+            checkImage.hidden = true
+        } else {
+            titleLabel.text = "Sign In to MiniMix"
+            infoLineLabel.text = "needed to access Cloud features"
+            registrationModeButton.hidden = false
+            doActionButton.setTitle("Sign In to Your Account", forState: .Normal)
+            emailTextField.placeholder = "Enter Your Email"
+            passwordTextField.placeholder = "Enter Your Password"
+            publicMonikerTextField.hidden = true
+            publicMonikerTextField.placeholder = "Create Your Public Artist Name"
+            checkImage.hidden = true
+        }
     }
     
 }
